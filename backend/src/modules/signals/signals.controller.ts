@@ -1,4 +1,5 @@
 import { Body, Controller, HttpCode, Param, Post, Query } from '@nestjs/common';
+import { timingSafeEqual } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
@@ -33,7 +34,7 @@ export class SignalsController {
     @Body() payload: Record<string, unknown>,
   ): Promise<{ received: boolean }> {
     const expectedSecret = this.configService.get<string>('esp.webhookSecret') || '';
-    if (expectedSecret && secret !== expectedSecret) {
+    if (expectedSecret && !this.secretMatches(secret, expectedSecret)) {
       // Reject forged events when a secret is configured; ack without processing.
       return { received: false };
     }
@@ -43,5 +44,15 @@ export class SignalsController {
       // Swallow: acknowledge fast so Kit does not retry; failures are logged in the service.
     }
     return { received: true };
+  }
+
+  /** Constant-time comparison to avoid leaking the webhook secret via timing. */
+  private secretMatches(provided: string, expected: string): boolean {
+    const a = Buffer.from(provided ?? '');
+    const b = Buffer.from(expected);
+    if (a.length !== b.length) {
+      return false;
+    }
+    return timingSafeEqual(a, b);
   }
 }

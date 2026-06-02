@@ -40,10 +40,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
         message = (responseObj.message as string | string[]) || message;
         error = (responseObj.error as string) || exception.name;
       }
-    } else if (exception instanceof Error) {
-      message = exception.message;
-      error = exception.name;
     }
+    // Non-HttpException errors are unexpected. Never expose their raw message or
+    // stack to the client (it can leak internals); log the detail server-side only.
 
     const errorResponse: ErrorResponse = {
       statusCode: status,

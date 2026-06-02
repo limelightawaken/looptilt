@@ -7,6 +7,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import * as express from 'express';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -21,6 +22,11 @@ async function bootstrap() {
     'FRONTEND_URL',
     'http://localhost:3000',
   );
+  const isProduction = configService.get<string>('NODE_ENV') === 'production';
+
+  // Security headers. CSP is disabled because this is a JSON API and Swagger UI
+  // (served in non-production) relies on inline scripts/styles.
+  app.use(helmet({ contentSecurityPolicy: false }));
 
   // Enable JSON body parsing for all routes EXCEPT Better Auth routes
   app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -67,7 +73,9 @@ async function bootstrap() {
   // Global interceptors
   app.useGlobalInterceptors(new LoggingInterceptor(), new TransformInterceptor());
 
-  // Swagger documentation
+  // Swagger documentation — exposed only outside production to avoid leaking
+  // the full API surface, schemas, and auth flow to the public internet.
+  if (!isProduction) {
   const config = new DocumentBuilder()
     .setTitle('LoopTilt API')
     .setDescription(
@@ -328,10 +336,13 @@ async function bootstrap() {
       persistAuthorization: true,
     },
   });
+  }
 
   await app.listen(port);
   console.log(`🚀 Application is running on: http://localhost:${port}/${apiPrefix}`);
-  console.log(`📚 Swagger documentation: http://localhost:${port}/${apiPrefix}/docs`);
+  if (!isProduction) {
+    console.log(`📚 Swagger documentation: http://localhost:${port}/${apiPrefix}/docs`);
+  }
   console.log(`🔐 Better Auth endpoints: http://localhost:${port}/${apiPrefix}/auth/*`);
 }
 
