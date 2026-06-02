@@ -1,6 +1,6 @@
 import { Global, Module, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import OpenAI from 'openai';
+import OpenAI, { type ClientOptions } from 'openai';
 import { AI_PROVIDER, AiProvider } from './ai-provider.interface';
 import { AiService } from './ai.service';
 import { HeuristicProvider } from './providers/heuristic.provider';
@@ -17,10 +17,16 @@ const aiProviderFactory = {
   useFactory: (config: ConfigService, heuristic: HeuristicProvider): AiProvider => {
     const logger = new Logger('AiModule');
     const apiKey = config.get<string>('ai.openaiApiKey') || '';
+    const baseUrl = config.get<string>('ai.openaiBaseUrl') || '';
     const model = config.get<string>('ai.openaiModel') || 'gpt-4o-mini';
     if (apiKey) {
-      logger.log(`AI provider: openai (${model})`);
-      return new OpenAiProvider(new OpenAI({ apiKey }), model, heuristic);
+      const clientOptions: ClientOptions = { apiKey };
+      if (baseUrl) {
+        clientOptions.baseURL = baseUrl;
+      }
+      const endpoint = baseUrl || 'https://api.openai.com/v1';
+      logger.log(`AI provider: openai-compatible (${model}) @ ${endpoint}`);
+      return new OpenAiProvider(new OpenAI(clientOptions), model, heuristic);
     }
     logger.warn('AI provider: heuristic (no OPENAI_API_KEY) - degraded analysis');
     return heuristic;

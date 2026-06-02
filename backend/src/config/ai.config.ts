@@ -7,6 +7,8 @@ import { registerAs } from '@nestjs/config';
  */
 export default registerAs('ai', () => ({
   openaiApiKey: process.env.OPENAI_API_KEY || '',
+  /** Optional override for OpenAI-compatible APIs (DeepSeek, Ollama, etc.). */
+  openaiBaseUrl: process.env.OPENAI_BASE_URL?.replace(/\/$/, '') || '',
   openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
   allowHeuristicFallback: process.env.ALLOW_HEURISTIC_FALLBACK === 'true',
 }));

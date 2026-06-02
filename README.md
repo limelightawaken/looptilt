@@ -4,30 +4,78 @@
 
 > Most AI in the newsletter world points at the *drafting* problem ("write me an issue"). LoopTilt points at the *understanding* problem — then uses that understanding to power engagement, retention, and affordable output.
 
-**Author:** Tayo Sadique
-**Status:** Full system — Fingerprint engine, Ghostwriter, and the Re-segmentation Loop with live Kit (ConvertKit) integration
-**Last updated:** June 2026
+**Author:** Tayo Sadique · **Status:** Full end-to-end system · **Last updated:** June 2026
+
+---
+
+## The pitch
+
+Newsletter creators with real lists don't have a writing problem — they have an **understanding** problem.
+
+Every issue goes to the same list. Depth-seekers and skimmers get the same compromise. Disengagement stays invisible until it becomes an unsubscribe. Personalization is obviously better, but nobody can sustain N segments × M issues.
+
+**LoopTilt reads your newsletter the way a sharp editor would** — topics, voice, audience, depth, obsessions — and turns that reading into action:
+
+| | What it does | Why it matters |
+|---|-------------|----------------|
+| **Newsletter fingerprint** | AI reads your archive and builds a structured profile of what your publication actually is | One source of truth that every downstream feature draws on |
+| **Reader fingerprint** | Scores every subscriber against that profile — topic affinities, lifecycle stage, churn slope | Per-reader understanding without manual tagging |
+| **Re-segmentation loop** | Ingests Kit signals, updates reader profiles, sorts readers into segments, reshapes the next send | Engagement and retention from behavior, not guesswork |
+| **Ghostwriter** | You write a menu of content blocks once; the engine assembles voice-preserving variants per segment | Makes segment-level personalization affordable at cadence |
+
+**LoopTilt does not send email.** It sits on top of the ESP you already use — Kit (ConvertKit) first, same posture as SparkLoop. It reads signals out, writes reader profiles back as tags and custom fields, and delivers per-segment variants through Kit draft broadcasts. Sends are **per-segment, not per-person** — what every ESP can actually do, and what keeps variant count tractable.
+
+The re-segmentation loop *creates* personalization demand; the ghostwriter *satisfies* it. Two features, one engine, mutually enabling.
+
+---
+
+## For reviewers — start here
+
+**What to look at in this repo**
+
+1. **The loop is real, not a mockup.** Archive → fingerprint → signals → reader profiles → segments → per-segment assembly → Kit draft broadcasts. Full stack, wired end to end.
+2. **Kit v4 integration is live.** Webhooks in, tags/custom fields out, per-segment broadcasts as drafts. Adapter interface ready for other ESPs.
+3. **Production safety is explicit.** Live vs demo data never mix. Simulator is dev-only. AI provider is reported at boot and on the readiness endpoint — no silent degradation.
+4. **Try it without a Kit account.** Demo mode seeds subscribers, generates signals, and runs the full loop locally in ~5 minutes.
+
+**Quick demo path** → [Demo walkthrough](#demo-walkthrough)
+
+**Architecture at a glance**
+
+```mermaid
+flowchart LR
+  Archive["Past issues"] --> FP["Newsletter fingerprint"]
+  Kit["Kit signals"] --> RF["Reader fingerprints"]
+  FP --> Segments["Segments"]
+  RF --> Segments
+  Segments --> GW["Ghostwriter"]
+  FP --> GW
+  GW --> Send["Per-segment drafts → Kit"]
+  Segments -->|"tags + fields"| Kit
+```
 
 ---
 
 ## Table of contents
 
-1. [Executive summary](#executive-summary)
-2. [The problem LoopTilt solves](#the-problem-looptilt-solves)
-3. [Product architecture: the loop](#product-architecture-the-loop)
-4. [What is implemented](#what-is-implemented)
-5. [Seed vs production (no silent fallback)](#seed-vs-production-no-silent-fallback)
-6. [The AI layer](#the-ai-layer)
-7. [Kit (ConvertKit) integration](#kit-convertkit-integration)
-8. [Technical architecture](#technical-architecture)
-9. [Data model](#data-model)
-10. [API reference](#api-reference)
-11. [Getting started](#getting-started)
-12. [Demo walkthrough](#demo-walkthrough)
-13. [Design decisions & trade-offs](#design-decisions--trade-offs)
-14. [Project structure](#project-structure)
-15. [Environment variables](#environment-variables)
-16. [Deployment notes](#deployment-notes)
+### Product
+1. [The problem LoopTilt solves](#the-problem-looptilt-solves)
+2. [Product architecture: the loop](#product-architecture-the-loop)
+3. [What is implemented](#what-is-implemented)
+4. [Demo walkthrough](#demo-walkthrough)
+5. [Design decisions & trade-offs](#design-decisions--trade-offs)
+
+### Technical
+6. [Seed vs production (no silent fallback)](#seed-vs-production-no-silent-fallback)
+7. [The AI layer](#the-ai-layer)
+8. [Kit (ConvertKit) integration](#kit-convertkit-integration)
+9. [Technical architecture](#technical-architecture)
+10. [Data model](#data-model)
+11. [API reference](#api-reference)
+12. [Getting started](#getting-started)
+13. [Project structure](#project-structure)
+14. [Environment variables](#environment-variables)
+15. [Deployment notes](#deployment-notes)
 
 ---
 
@@ -42,11 +90,7 @@ That one thing is the **newsletter fingerprint**: a structured profile (topics, 
 | **Ghostwriter** | Learns the voice from the archive; assembles per-segment variants from a modular block menu | Implemented |
 | **Re-segmentation loop** | Reads Kit signals, computes the reader fingerprint, sorts readers into segments, and reshapes the next send per segment | Implemented |
 
-**LoopTilt does not send email.** It sits on top of the ESP the creator already uses (Kit first), the same posture SparkLoop takes. It reads signals out, writes the reader profile back as tags/custom fields, and delivers per-segment variants through Kit broadcasts.
-
-**Sends are per-segment, not per-person:** the fingerprint is computed for every individual, but delivery targets a bounded set of segments — what every ESP can actually do, and what keeps the ghostwriter's variant count tractable.
-
-This repository is the **full system, end to end**: archive ingestion → fingerprint (OpenAI) → Kit signal capture (or a local simulator) → reader fingerprints + churn detection → default and AI-built segments → per-segment voice-preserving sends → Kit draft broadcasts.
+This repository is the **full system, end to end**: archive ingestion → fingerprint (OpenAI-compatible) → Kit signal capture (or a local simulator) → reader fingerprints + churn detection → default and AI-built segments → per-segment voice-preserving sends → Kit draft broadcasts.
 
 ---
 
@@ -126,6 +170,41 @@ A restrained, editorial dashboard (shadcn-style primitives + Framer Motion) with
 
 ---
 
+## Demo walkthrough
+
+The full loop runs locally without a Kit account using **Demo data** mode.
+
+1. **Sign up**, then create a newsletter (e.g. "The Growth Brief").
+2. **Archive tab** — paste 2–3 past issues.
+3. **Fingerprint tab** — Generate. Review topics, voice, audience, depth (shows whether OpenAI or heuristic produced it).
+4. **Connection tab** — choose **Use demo data**. Then: **Seed 60 subscribers** → **Generate 10 issues of signals** → **Run the loop**.
+5. **Signals tab** — see the lifecycle mix, topic engagement, and the highest churn-risk readers (the simulator deliberately includes declining readers so the churn-slope detector lights up).
+6. **Segments tab** — defaults appear automatically. Try the AI builder: type "readers who cooled off and lean technical" → Preview → see the rule, rationale, and live match count → Save.
+7. **Blocks tab** — add a few content blocks.
+8. **Send tab** — Compose. The ghostwriter generates one voice-preserving variant per segment. (In Live mode, "Push to Kit" creates draft broadcasts per segment tag.)
+
+To use **Live (Kit)** instead: Connection tab → paste a Kit v4 API key → Connect. Webhooks register automatically and signals flow from Kit.
+
+---
+
+## Design decisions & trade-offs
+
+- **Explicit data-source mode over fallback.** Live and simulated data are physically separated by `source` and never mix; production can't run the simulator. This is the single most important production-safety property.
+- **Heuristic AI fallback is dev-only.** Production fails fast without an OpenAI key (unless explicitly allowed), so you never ship degraded analysis unknowingly.
+- **Per-segment, not per-person, delivery.** Matches what Kit (and most ESPs) can actually do and bounds the ghostwriter's work to a handful of variants.
+- **Churn = slope, not level.** A reader at 40% opens trending 70→60→50→40 is riskier than a steady-40% reader. The detector reads the derivative.
+- **Broadcasts default to drafts.** No accidental sends to a whole list during a demo or in production.
+- **Adapter interface.** Kit is the only implementation today; beehiiv/Klaviyo/Mailchimp slot in behind `EspAdapter`.
+- **No GraphQL.** The starter's unused tRPC scaffold was removed in favor of typed REST, consistent with the NestJS module conventions.
+
+---
+
+# Technical documentation
+
+Everything below is for engineers setting up, extending, or deploying the system.
+
+---
+
 ## Seed vs production (no silent fallback)
 
 A core safety property: **the product never quietly runs on fake data.** Two independent guarantees:
@@ -150,7 +229,7 @@ The same principle applies to the AI layer: **in production the app fails fast a
 
 The newsletter fingerprint, the AI segment builder, and per-segment assembly are all LLM jobs. They go through `AiService`, which resolves one provider explicitly:
 
-- **`OpenAiProvider`** — used whenever `OPENAI_API_KEY` is set. Returns structured JSON validated with zod; on a malformed response it falls back to the heuristic result for that single call so a transient model error never breaks a feature.
+- **`OpenAiProvider`** — used whenever `OPENAI_API_KEY` is set. Works with any OpenAI-compatible API (OpenAI, DeepSeek, Ollama, etc.) via optional `OPENAI_BASE_URL`. Returns structured JSON validated with zod; on a malformed response it falls back to the heuristic result for that single call so a transient model error never breaks a feature.
 - **`HeuristicProvider`** — a deterministic, dependency-free analyzer. It fills the exact same schemas, so the whole system runs without an API key in development (lower quality, clearly reported via the readiness endpoint and the fingerprint's `generatedBy`).
 
 ---
@@ -174,7 +253,7 @@ The Kit adapter sits behind an `EspAdapter` interface so beehiiv / Klaviyo / Mai
 | Frontend | Next.js 16, React 19, Tailwind 4, Framer Motion | App Router; editorial design system |
 | Backend | NestJS 11 | Modular domains, Swagger, Better Auth, `@nestjs/schedule`, `@nestjs/throttler` |
 | Database | PostgreSQL + Prisma 6 | Append-only events + relational fingerprint/segment model |
-| AI | OpenAI (`openai`) + heuristic fallback | zod-validated structured output |
+| AI | OpenAI-compatible (`openai` SDK) + heuristic fallback | Works with OpenAI, DeepSeek, Ollama, etc. via `OPENAI_BASE_URL`; zod-validated structured output |
 | Secrets | AES-256-GCM (`CryptoService`) | Kit API keys encrypted at rest |
 
 ---
@@ -251,6 +330,9 @@ BETTER_AUTH_SECRET="a-32-char-minimum-secret"
 ENCRYPTION_KEY="another-32-char-minimum-secret"
 # Optional in dev (heuristic fallback runs without it); REQUIRED in production:
 OPENAI_API_KEY=
+# Optional — point at an OpenAI-compatible provider (omit for default OpenAI):
+# OPENAI_BASE_URL=https://api.deepseek.com
+# OPENAI_MODEL=deepseek-chat
 # Dev only — must be false/unset in production:
 ENABLE_SIMULATOR=true
 ```
@@ -274,35 +356,6 @@ npm run dev
 ```
 
 App: `http://localhost:3000`
-
----
-
-## Demo walkthrough
-
-The full loop runs locally without a Kit account using **Demo data** mode.
-
-1. **Sign up**, then create a newsletter (e.g. "The Growth Brief").
-2. **Archive tab** — paste 2–3 past issues.
-3. **Fingerprint tab** — Generate. Review topics, voice, audience, depth (shows whether OpenAI or heuristic produced it).
-4. **Connection tab** — choose **Use demo data**. Then: **Seed 60 subscribers** → **Generate 10 issues of signals** → **Run the loop**.
-5. **Signals tab** — see the lifecycle mix, topic engagement, and the highest churn-risk readers (the simulator deliberately includes declining readers so the churn-slope detector lights up).
-6. **Segments tab** — defaults appear automatically. Try the AI builder: type "readers who cooled off and lean technical" → Preview → see the rule, rationale, and live match count → Save.
-7. **Blocks tab** — add a few content blocks.
-8. **Send tab** — Compose. The ghostwriter generates one voice-preserving variant per segment. (In Live mode, "Push to Kit" creates draft broadcasts per segment tag.)
-
-To use **Live (Kit)** instead: Connection tab → paste a Kit v4 API key → Connect. Webhooks register automatically and signals flow from Kit.
-
----
-
-## Design decisions & trade-offs
-
-- **Explicit data-source mode over fallback.** Live and simulated data are physically separated by `source` and never mix; production can't run the simulator. This is the single most important production-safety property.
-- **Heuristic AI fallback is dev-only.** Production fails fast without an OpenAI key (unless explicitly allowed), so you never ship degraded analysis unknowingly.
-- **Per-segment, not per-person, delivery.** Matches what Kit (and most ESPs) can actually do and bounds the ghostwriter's work to a handful of variants.
-- **Churn = slope, not level.** A reader at 40% opens trending 70→60→50→40 is riskier than a steady-40% reader. The detector reads the derivative.
-- **Broadcasts default to drafts.** No accidental sends to a whole list during a demo or in production.
-- **Adapter interface.** Kit is the only implementation today; beehiiv/Klaviyo/Mailchimp slot in behind `EspAdapter`.
-- **No GraphQL.** The starter's unused tRPC scaffold was removed in favor of typed REST, consistent with the NestJS module conventions.
 
 ---
 
@@ -345,8 +398,9 @@ looptilt/
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `BETTER_AUTH_SECRET` | Yes | Auth secret (≥32 chars) |
 | `ENCRYPTION_KEY` | Yes (prod) | ≥32-char secret for AES-256-GCM encryption of stored ESP keys |
-| `OPENAI_API_KEY` | Yes in prod* | OpenAI key; absent in dev uses heuristic fallback |
-| `OPENAI_MODEL` | No | Defaults to `gpt-4o-mini` |
+| `OPENAI_API_KEY` | Yes in prod* | API key for OpenAI or any OpenAI-compatible provider; absent in dev uses heuristic fallback |
+| `OPENAI_BASE_URL` | No | Base URL for OpenAI-compatible APIs (e.g. `https://api.deepseek.com`); omit for default OpenAI |
+| `OPENAI_MODEL` | No | Model id for the configured provider; defaults to `gpt-4o-mini` |
 | `ALLOW_HEURISTIC_FALLBACK` | No | Set `true` to explicitly allow heuristic AI in production |
 | `ENABLE_SIMULATOR` | No | `true` enables the dev simulator; must be false/unset in production |
 | `KIT_API_BASE_URL` | No | Defaults to `https://api.kit.com/v4` |
