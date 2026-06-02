@@ -1,49 +1,55 @@
-# Build stage
+# Multi-stage build for LoopTilt NestJS backend
+
+# Stage 1: Build
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
-COPY prisma ./prisma/
+COPY nest-cli.json ./
+COPY tsconfig.json ./
 
-# Install dependencies
 RUN npm ci
 
-# Generate Prisma client
+COPY prisma ./prisma/
+
 RUN npx prisma generate
 
-# Copy source code
-COPY . .
+COPY src ./src
+COPY scripts ./scripts/
 
-# Build the application (production env enforces SMTP for email verification)
-RUN NODE_ENV=production npm run build
+# Do not set NODE_ENV=production here — prebuild enforces SMTP and is for deploy-time config.
+RUN npm run build
 
-# Production stage
+RUN ls -la dist/ && test -f dist/main.js
+
+# Stage 2: Production
 FROM node:20-alpine AS production
 
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
-COPY prisma ./prisma/
 
-# Install production dependencies only
-RUN npm ci --only=production
+RUN npm ci --omit=dev && npm cache clean --force
 
-# Generate Prisma client
-RUN npx prisma generate
+# Prisma CLI for migrate deploy at container start
+RUN npm install prisma@^6.0.0 --save-dev && npm cache clean --force
 
-# Copy built application
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/dist ./dist
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nestjs -u 1001
+RUN ls -la dist/ && test -f dist/main.js
+
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nestjs -u 1001
+
+RUN chown -R nestjs:nodejs /app
+
 USER nestjs
 
-# Expose port
 EXPOSE 3001
 
-# Start the application
-CMD ["node", "dist/main"]
+# Apply pending migrations, then start the API (requires DATABASE_URL at runtime).
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]

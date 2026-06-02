@@ -433,7 +433,8 @@ looptilt/
 
 - Set `NODE_ENV=production`, a strong `BETTER_AUTH_SECRET` and `ENCRYPTION_KEY`, and `OPENAI_API_KEY`.
 - Ensure `ENABLE_SIMULATOR` is unset/false — production refuses to boot otherwise.
-- Run `npm run prisma:migrate:prod`, build (`npm run build`), and start (`npm run start:prod`).
+- Backend Docker image runs `prisma migrate deploy` on startup, then `node dist/main.js` (set `DATABASE_URL` and other env vars on the container).
+- For non-Docker deploys: run `npm run prisma:migrate:prod`, build (`npm run build`), and start (`npm run start:prod`).
 - Point `APP_PUBLIC_URL` at the publicly reachable backend so Kit can deliver webhooks.
 - Frontend: set `NEXT_PUBLIC_BACKEND_URL`, `npm run build`, deploy to Vercel or `npm run start`.
 
