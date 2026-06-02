@@ -61,8 +61,8 @@ export function ConnectionPanel({ newsletterId, onChange }: ConnectionPanelProps
           </div>
         </CardHeader>
         <CardContent className="space-y-5">
-          {error && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">{error}</p>}
-          {note && <p className="rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-400">{note}</p>}
+          {error && <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
+          {note && <p className="rounded-lg bg-midnight-green/10 p-3 text-sm text-midnight-green dark:text-sand-yellow">{note}</p>}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-lg border border-border p-4">

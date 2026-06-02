@@ -69,7 +69,7 @@ export function SendsPanel({ newsletterId, dataSource }: SendsPanelProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {error && <p className="mb-3 rounded-lg bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">{error}</p>}
+          {error && <p className="mb-3 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
           <form onSubmit={handleCompose} className="flex gap-2">
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Issue title" />
             <Button type="submit" disabled={busy !== null || !title.trim()}>

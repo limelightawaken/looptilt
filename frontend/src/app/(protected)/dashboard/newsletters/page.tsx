@@ -72,7 +72,7 @@ export default function NewslettersPage() {
           <CardContent>
             <form onSubmit={handleCreate} className="space-y-4">
               {error && (
-                <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">{error}</p>
+                <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</p>
               )}
               <div className="space-y-1.5">
                 <Label htmlFor="name">Name</Label>

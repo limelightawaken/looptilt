@@ -78,7 +78,7 @@ export function SegmentsPanel({ newsletterId }: { newsletterId: string }) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {error && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">{error}</p>}
+          {error && <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
           <div className="flex gap-2">
             <Input
               value={description}

@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -6,8 +7,21 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+
+  /* Custom Brand Colors */
+  --color-ty-blue: var(--ty-blue);
+  --color-pantone-orange: var(--pantone-orange);
+  --color-midnight-green: var(--midnight-green);
+  --color-wheat: var(--wheat);
+  --color-ivory-cream: var(--ivory-cream);
+  --color-light-silver: var(--light-silver);
+  --color-gunmetal: var(--gunmetal);
+  --color-eerie-black: var(--eerie-black);
+  --color-sand-yellow: var(--sand-yellow);
+
+  /* Standard Colors */
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -45,78 +59,110 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+
+  /* Custom Brand Colors */
+  --ty-blue: #221e55;
+  --pantone-orange: #ff5b04;
+  --midnight-green: #075056;
+  --wheat: #f7e1b8;
+  --ivory-cream: #fdf6e3;
+  --light-silver: #d3dbdd;
+  --gunmetal: #233038;
+  --eerie-black: #1f1f1f;
+  --sand-yellow: #f4d47c;
+
+  /* Light Mode Theme */
+  --background: #fdf6e3; /* Ivory Cream */
+  --foreground: #233038; /* Gunmetal */
+  --card: #f7e1b8; /* Wheat for light mode cards */
+  --card-foreground: #233038;
+  --popover: #ffffff;
+  --popover-foreground: #233038;
+  --primary: #221e55; /* TY Logo Blue */
+  --primary-foreground: #fdf6e3;
+  --secondary: #fdf6e3; /* Ivory Cream */
+  --secondary-foreground: #233038;
+  --muted: #fdf6e3; /* Ivory Cream */
+  --muted-foreground: #6b7280; /* Better contrast for light mode */
+  --accent: #ff5b04; /* Pantone Orange */
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #d3dbdd; /* Light Silver */
+  --input: #ffffff;
+  --ring: #221e55;
+  --chart-1: #ff5b04; /* Pantone Orange */
+  --chart-2: #075056; /* Midnight Green */
+  --chart-3: #221e55; /* TY Blue */
+  --chart-4: #f4d47c; /* Sand Yellow */
+  --chart-5: #233038; /* Gunmetal */
+  --sidebar: #fdf6e3; /* Ivory Cream */
+  --sidebar-foreground: #233038; /* Gunmetal */
+  --sidebar-primary: #221e55; /* TY Blue */
+  --sidebar-primary-foreground: #fdf6e3;
+  --sidebar-accent: #f7e1b8; /* Wheat */
+  --sidebar-accent-foreground: #233038;
+  --sidebar-border: #d3dbdd; /* Light Silver */
+  --sidebar-ring: #221e55;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Dark Mode Theme */
+  --background: #1f1f1f; /* Eerie Black */
+  --foreground: #fdf6e3; /* Ivory Cream */
+  --card: #233038; /* Gunmetal */
+  --card-foreground: #fdf6e3;
+  --popover: #233038;
+  --popover-foreground: #fdf6e3;
+  --primary: #221e55; /* TY Logo Blue */
+  --primary-foreground: #fdf6e3;
+  --secondary: #233038; /* Gunmetal */
+  --secondary-foreground: #f7e1b8;
+  --muted: #233038;
+  --muted-foreground: #d1d5db; /* Better contrast for dark mode - lighter gray */
+  --accent: #ff5b04; /* Pantone Orange */
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #4a5568; /* Lighter gray for better visibility */
+  --input: #2d3748; /* Slightly lighter than gunmetal */
+  --ring: #ff5b04; /* Pantone Orange for better visibility */
+  --chart-1: #ff5b04; /* Pantone Orange */
+  --chart-2: #075056; /* Midnight Green */
+  --chart-3: #221e55; /* TY Blue */
+  --chart-4: #f4d47c; /* Sand Yellow */
+  --chart-5: #fdf6e3; /* Ivory Cream */
+  --sidebar: #233038; /* Gunmetal */
+  --sidebar-foreground: #fdf6e3; /* Ivory Cream */
+  --sidebar-primary: #221e55; /* TY Blue */
+  --sidebar-primary-foreground: #fdf6e3;
+  --sidebar-accent: #233038; /* Gunmetal */
+  --sidebar-accent-foreground: #f7e1b8;
+  --sidebar-border: #4a5568;
+  --sidebar-ring: #ff5b04;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
+  *:focus-visible {
+    @apply outline-2 outline-ring outline-offset-2;
+  }
+
+  html {
+    @apply overflow-x-hidden;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
+  }
+
+  /* Custom input outlines */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 }

@@ -52,7 +52,7 @@ export function FingerprintView({ newsletterId, fingerprint, hasArchive, onChang
         </Button>
       </div>
 
-      {error && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
 
       {!isReady ? (
         <EmptyState
