@@ -1,15 +1,43 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DatabaseService } from '../../common/database/database.service';
+import { AiService } from '../ai/ai.service';
 
 @Injectable()
 export class HealthService {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly aiService: AiService,
+    private readonly configService: ConfigService,
+  ) {}
 
   check() {
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
+    };
+  }
+
+  async readiness() {
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+    const simulatorEnabled =
+      !isProduction && this.configService.get<boolean>('esp.enableSimulator') === true;
+    const connections = await this.database.espConnection.findMany({
+      where: { isActive: true },
+      select: { dataSource: true },
+    });
+    const connectionsByDataSource = connections.reduce<Record<string, number>>((acc, row) => {
+      acc[row.dataSource] = (acc[row.dataSource] ?? 0) + 1;
+      return acc;
+    }, {});
+    return {
+      status: 'ok',
+      environment: isProduction ? 'production' : 'non-production',
+      aiProvider: this.aiService.activeProvider,
+      simulatorEnabled,
+      connectionsByDataSource,
+      timestamp: new Date().toISOString(),
     };
   }
 

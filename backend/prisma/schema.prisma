@@ -75,30 +75,41 @@ model Verification {
   @@map("verifications")
 }
 
-model Newsletter {
-  id          String                  @id @default(cuid())
-  userId      String
-  name        String
-  description String?
-  espProvider EspProvider             @default(NONE)
-  createdAt   DateTime                @default(now())
-  updatedAt   DateTime                @updatedAt
-  user        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  archive     ArchiveIssue[]
-  fingerprint NewsletterFingerprint?
-  drafts      GhostwriterDraft[]
-  esp         EspConnection?
-
-  @@index([userId])
-  @@map("newsletters")
-}
-
 enum EspProvider {
   NONE
   KIT
   BEEHIIV
   KLAVIYO
   MAILCHIMP
+}
+
+enum DataSource {
+  LIVE_KIT
+  SIMULATOR
+}
+
+model Newsletter {
+  id          String                 @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  espProvider EspProvider            @default(NONE)
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  user        User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  archive     ArchiveIssue[]
+  fingerprint NewsletterFingerprint?
+  drafts      GhostwriterDraft[]
+  esp         EspConnection?
+  topics      NewsletterTopic[]
+  subscribers Subscriber[]
+  signals     SignalEvent[]
+  segments    Segment[]
+  blocks      ContentBlock[]
+  sends       Send[]
+
+  @@index([userId])
+  @@map("newsletters")
 }
 
 model ArchiveIssue {
@@ -124,23 +135,246 @@ enum FingerprintStatus {
 }
 
 model NewsletterFingerprint {
-  id           String            @id @default(cuid())
-  newsletterId String            @unique
-  status       FingerprintStatus @default(PENDING)
-  version      Int               @default(1)
+  id           String             @id @default(cuid())
+  newsletterId String             @unique
+  status       FingerprintStatus  @default(PENDING)
+  version      Int                @default(1)
   topics       Json?
   voice        Json?
   audience     Json?
   depthFormat  Json?
   obsessions   Json?
-  summary      String?           @db.Text
+  summary      String?            @db.Text
   errorMessage String?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  newsletter   Newsletter        @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+  generatedBy  String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  newsletter   Newsletter         @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
   drafts       GhostwriterDraft[]
 
   @@map("newsletter_fingerprints")
+}
+
+model NewsletterTopic {
+  id           String        @id @default(cuid())
+  newsletterId String
+  name         String
+  slug         String
+  weight       Float         @default(0.5)
+  subTopics    String[]      @default([])
+  createdAt    DateTime      @default(now())
+  newsletter   Newsletter    @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+  signals      SignalEvent[]
+
+  @@unique([newsletterId, slug])
+  @@index([newsletterId])
+  @@map("newsletter_topics")
+}
+
+enum SubscriberState {
+  ACTIVE
+  BOUNCED
+  CANCELLED
+  COMPLAINED
+  INACTIVE
+}
+
+model Subscriber {
+  id                  String              @id @default(cuid())
+  newsletterId        String
+  espSubscriberId     String?
+  email               String
+  firstName           String?
+  state               SubscriberState     @default(ACTIVE)
+  source              DataSource
+  signupTrigger       String?
+  channel             String?
+  referringNewsletter String?
+  signupContext       String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  newsletter          Newsletter          @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+  events              SignalEvent[]
+  fingerprint         ReaderFingerprint?
+  memberships         SegmentMembership[]
+
+  @@unique([newsletterId, email])
+  @@index([newsletterId, source])
+  @@map("subscribers")
+}
+
+enum SignalType {
+  LINK_CLICK
+  OPEN
+  ACTIVATE
+  UNSUBSCRIBE
+  BOUNCE
+  COMPLAIN
+  FORM_SUBSCRIBE
+  TAG_ADD
+  TAG_REMOVE
+  POLL_ANSWER
+  RATE
+  MORE_LIKE_THIS
+  LESS_LIKE_THIS
+  REPLY
+}
+
+model SignalEvent {
+  id           String           @id @default(cuid())
+  newsletterId String
+  subscriberId String
+  type         SignalType
+  source       DataSource
+  topicId      String?
+  linkUrl      String?
+  position     String?
+  value        Float?
+  rawPayload   Json?
+  occurredAt   DateTime         @default(now())
+  ingestedAt   DateTime         @default(now())
+  newsletter   Newsletter       @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+  subscriber   Subscriber       @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  topic        NewsletterTopic? @relation(fields: [topicId], references: [id], onDelete: SetNull)
+
+  @@index([newsletterId, source])
+  @@index([subscriberId])
+  @@index([occurredAt])
+  @@map("signal_events")
+}
+
+enum LifecycleStage {
+  NEW
+  WARMING
+  ENGAGED
+  COOLING
+  DORMANT
+  REACTIVATED
+}
+
+enum DepthPreference {
+  UNKNOWN
+  SKIMMER
+  DEEP
+}
+
+model ReaderFingerprint {
+  id              String          @id @default(cuid())
+  subscriberId    String          @unique
+  topicAffinities Json
+  depthPreference DepthPreference @default(UNKNOWN)
+  tonePreference  String?
+  lifecycleStage  LifecycleStage  @default(NEW)
+  churnPropensity Float           @default(0)
+  openRate        Float?
+  signalCount     Int             @default(0)
+  version         Int             @default(1)
+  computedAt      DateTime        @default(now())
+  subscriber      Subscriber      @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+
+  @@map("reader_fingerprints")
+}
+
+enum SegmentKind {
+  DEFAULT_LIFECYCLE
+  DEFAULT_DEPTH
+  DEFAULT_AFFINITY
+  CUSTOM
+}
+
+model Segment {
+  id           String              @id @default(cuid())
+  newsletterId String
+  name         String
+  kind         SegmentKind
+  description  String?
+  rationale    String?             @db.Text
+  definition   Json?
+  kitTagId     String?
+  isActive     Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  newsletter   Newsletter          @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+  memberships  SegmentMembership[]
+  variants     SegmentVariant[]
+
+  @@index([newsletterId])
+  @@map("segments")
+}
+
+model SegmentMembership {
+  id           String     @id @default(cuid())
+  segmentId    String
+  subscriberId String
+  addedAt      DateTime   @default(now())
+  segment      Segment    @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  subscriber   Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+
+  @@unique([segmentId, subscriberId])
+  @@index([subscriberId])
+  @@map("segment_memberships")
+}
+
+model ContentBlock {
+  id           String     @id @default(cuid())
+  newsletterId String
+  label        String
+  intent       String
+  body         String     @db.Text
+  topicId      String?
+  order        Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  newsletter   Newsletter @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+
+  @@index([newsletterId])
+  @@map("content_blocks")
+}
+
+enum SendStatus {
+  DRAFT
+  GENERATING
+  READY
+  PUBLISHING
+  PUBLISHED
+  FAILED
+}
+
+model Send {
+  id           String           @id @default(cuid())
+  newsletterId String
+  title        String
+  status       SendStatus       @default(DRAFT)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  newsletter   Newsletter       @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+  variants     SegmentVariant[]
+
+  @@index([newsletterId])
+  @@map("sends")
+}
+
+enum VariantStatus {
+  PENDING
+  GENERATED
+  PUBLISHED
+  FAILED
+}
+
+model SegmentVariant {
+  id             String        @id @default(cuid())
+  sendId         String
+  segmentId      String
+  content        String        @db.Text
+  kitBroadcastId String?
+  status         VariantStatus @default(PENDING)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  send           Send          @relation(fields: [sendId], references: [id], onDelete: Cascade)
+  segment        Segment       @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+
+  @@unique([sendId, segmentId])
+  @@map("segment_variants")
 }
 
 enum DraftStatus {
@@ -167,14 +401,19 @@ model GhostwriterDraft {
 }
 
 model EspConnection {
-  id           String     @id @default(cuid())
-  newsletterId String     @unique
-  provider     EspProvider
-  isActive     Boolean    @default(false)
-  lastSyncedAt DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  newsletter   Newsletter @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+  id                String      @id @default(cuid())
+  newsletterId      String      @unique
+  provider          EspProvider
+  dataSource        DataSource  @default(SIMULATOR)
+  isActive          Boolean     @default(false)
+  apiKeyEncrypted   String?
+  kitAccountId      String?
+  webhookIds        Json?
+  customFieldKeyMap Json?
+  lastSyncedAt      DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  newsletter        Newsletter  @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
 
   @@map("esp_connections")
 }

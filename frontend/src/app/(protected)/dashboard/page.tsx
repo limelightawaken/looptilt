@@ -2,146 +2,135 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { useSession } from "@/lib/auth-client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { StatCard } from "@/components/shared/stat-card";
+import { EmptyState } from "@/components/shared/empty-state";
+import { fadeUp, stagger } from "@/lib/motion";
 import { looptiltApi } from "@/lib/looptilt-api";
 import type { NewsletterSummary } from "@/lib/types/looptilt";
+
+const STEPS = [
+  "Create a newsletter and import your archive.",
+  "Generate the fingerprint - topics, voice, audience, depth.",
+  "Connect Kit (or demo data) and let signals flow in.",
+  "Run the loop: reader fingerprints sort readers into segments.",
+  "Compose a send - one voice-preserving variant per segment.",
+];
 
 export default function DashboardPage() {
   const { data: session } = useSession();
   const [newsletters, setNewsletters] = useState<NewsletterSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     looptiltApi
       .listNewsletters()
       .then(setNewsletters)
-      .catch((err) =>
-        setError(err instanceof Error ? err.message : "Failed to load newsletters")
-      )
+      .catch(() => undefined)
       .finally(() => setLoading(false));
   }, []);
 
-  const readyFingerprints = newsletters.filter(
-    (n) => n.fingerprint?.status === "READY"
-  ).length;
-  const totalArchiveIssues = newsletters.reduce(
-    (sum, n) => sum + n._count.archive,
-    0
-  );
+  const readyFingerprints = newsletters.filter((n) => n.fingerprint?.status === "READY").length;
+  const totalArchive = newsletters.reduce((sum, n) => sum + n._count.archive, 0);
   const totalDrafts = newsletters.reduce((sum, n) => sum + n._count.drafts, 0);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <h1 className="text-3xl font-semibold tracking-tight">
             Welcome back, {session?.user?.name?.split(" ")[0] || "creator"}
           </h1>
-          <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-            Your fingerprint engine workspace. v1 focuses on archive → fingerprint → ghostwriter.
+          <p className="mt-1.5 text-muted-foreground">
+            The fingerprint engine, the re-segmentation loop, and the ghostwriter - in one place.
           </p>
         </div>
-        <Link
-          href="/dashboard/newsletters"
-          className="inline-flex items-center justify-center rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-        >
+        <Link href="/dashboard/newsletters" className={buttonVariants()}>
           Manage newsletters
         </Link>
       </div>
 
-      {error && (
-        <div className="mb-6 rounded-lg bg-red-50 p-4 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-          {error}
-        </div>
-      )}
-
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Newsletters" value={loading ? "—" : String(newsletters.length)} />
-        <StatCard label="Archive issues" value={loading ? "—" : String(totalArchiveIssues)} />
-        <StatCard label="Fingerprints ready" value={loading ? "—" : String(readyFingerprints)} />
-        <StatCard label="Ghostwriter drafts" value={loading ? "—" : String(totalDrafts)} />
-      </div>
+      <motion.div
+        variants={stagger(0.06)}
+        initial="hidden"
+        animate="visible"
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+      >
+        {[
+          { label: "Newsletters", value: loading ? "-" : newsletters.length },
+          { label: "Archive issues", value: loading ? "-" : totalArchive },
+          { label: "Fingerprints ready", value: loading ? "-" : readyFingerprints },
+          { label: "Ghostwriter drafts", value: loading ? "-" : totalDrafts },
+        ].map((stat) => (
+          <motion.div key={stat.label} variants={fadeUp}>
+            <StatCard label={stat.label} value={stat.value} />
+          </motion.div>
+        ))}
+      </motion.div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-            v1 workflow
-          </h2>
-          <ol className="mt-4 space-y-3 text-sm text-zinc-600 dark:text-zinc-400">
-            <li className="flex gap-3">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
-                1
-              </span>
-              Create a newsletter workspace and paste past issues into the archive.
-            </li>
-            <li className="flex gap-3">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
-                2
-              </span>
-              Generate your fingerprint — topics, voice, audience, depth, obsessions.
-            </li>
-            <li className="flex gap-3">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
-                3
-              </span>
-              Use Ghostwriter to draft the next issue in your inferred voice.
-            </li>
-          </ol>
-        </div>
-
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-            Recent newsletters
-          </h2>
-          {loading ? (
-            <p className="mt-4 text-sm text-zinc-500">Loading...</p>
-          ) : newsletters.length === 0 ? (
-            <div className="mt-4">
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                No newsletters yet. Create one to import your archive.
-              </p>
-              <Link
-                href="/dashboard/newsletters"
-                className="mt-4 inline-block text-sm font-medium text-zinc-900 underline dark:text-zinc-50"
-              >
-                Create your first newsletter →
-              </Link>
-            </div>
-          ) : (
-            <ul className="mt-4 divide-y divide-zinc-100 dark:divide-zinc-800">
-              {newsletters.slice(0, 5).map((newsletter) => (
-                <li key={newsletter.id} className="py-3">
-                  <Link
-                    href={`/dashboard/newsletters/${newsletter.id}`}
-                    className="flex items-center justify-between gap-4 hover:opacity-80"
-                  >
-                    <div>
-                      <p className="font-medium text-zinc-900 dark:text-zinc-50">
-                        {newsletter.name}
-                      </p>
-                      <p className="text-xs text-zinc-500">
-                        {newsletter._count.archive} issues ·{" "}
-                        {newsletter.fingerprint?.status ?? "PENDING"} fingerprint
-                      </p>
-                    </div>
-                    <span className="text-xs text-zinc-400">Open →</span>
-                  </Link>
+        <Card>
+          <CardHeader>
+            <CardTitle>How the loop works</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ol className="space-y-3">
+              {STEPS.map((step, index) => (
+                <li key={step} className="flex gap-3 text-sm text-muted-foreground">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-foreground text-xs font-semibold text-background">
+                    {index + 1}
+                  </span>
+                  {step}
                 </li>
               ))}
-            </ul>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+            </ol>
+          </CardContent>
+        </Card>
 
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{label}</p>
-      <p className="mt-2 text-3xl font-semibold text-zinc-900 dark:text-zinc-50">{value}</p>
+        <Card>
+          <CardHeader>
+            <CardTitle>Your newsletters</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            ) : newsletters.length === 0 ? (
+              <EmptyState
+                title="No newsletters yet"
+                description="Create one to import your archive."
+                action={
+                  <Link href="/dashboard/newsletters" className={buttonVariants()}>
+                    Create newsletter
+                  </Link>
+                }
+              />
+            ) : (
+              <ul className="divide-y divide-border">
+                {newsletters.slice(0, 6).map((n) => (
+                  <li key={n.id}>
+                    <Link
+                      href={`/dashboard/newsletters/${n.id}`}
+                      className="flex items-center justify-between gap-4 py-3 transition-opacity hover:opacity-80"
+                    >
+                      <div>
+                        <p className="text-sm font-medium">{n.name}</p>
+                        <p className="text-xs text-muted-foreground">{n._count.archive} archive issues</p>
+                      </div>
+                      <Badge variant={n.fingerprint?.status === "READY" ? "success" : "outline"}>
+                        {(n.fingerprint?.status ?? "pending").toLowerCase()}
+                      </Badge>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

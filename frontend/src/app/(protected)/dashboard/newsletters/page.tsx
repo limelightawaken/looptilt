@@ -2,6 +2,15 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/shared/empty-state";
+import { fadeUp, stagger } from "@/lib/motion";
 import { looptiltApi } from "@/lib/looptilt-api";
 import type { NewsletterSummary } from "@/lib/types/looptilt";
 
@@ -13,19 +22,17 @@ export default function NewslettersPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
-  const loadNewsletters = () => {
+  const load = () => {
     setLoading(true);
     looptiltApi
       .listNewsletters()
       .then(setNewsletters)
-      .catch((err) =>
-        setError(err instanceof Error ? err.message : "Failed to load newsletters")
-      )
+      .catch(() => undefined)
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    loadNewsletters();
+    load();
   }, []);
 
   const handleCreate = async (event: FormEvent) => {
@@ -40,7 +47,7 @@ export default function NewslettersPage() {
       });
       setName("");
       setDescription("");
-      loadNewsletters();
+      load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create newsletter");
     } finally {
@@ -51,98 +58,74 @@ export default function NewslettersPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Newsletters
-        </h1>
-        <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-          Each workspace holds your archive, fingerprint, and ghostwriter drafts.
+        <h1 className="text-3xl font-semibold tracking-tight">Newsletters</h1>
+        <p className="mt-1.5 text-muted-foreground">
+          Each workspace holds an archive, fingerprint, segments, blocks, and sends.
         </p>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
-        <form
-          onSubmit={handleCreate}
-          className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900 lg:col-span-1"
-        >
-          <h2 className="text-lg font-semibold">New newsletter</h2>
-          {error && (
-            <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-              {error}
-            </p>
-          )}
-          <div className="mt-4 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Name
-              </label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-                placeholder="The Growth Brief"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Description
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-                placeholder="What is this newsletter about?"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={creating || !name.trim()}
-              className="w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-semibold text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-            >
-              {creating ? "Creating..." : "Create workspace"}
-            </button>
-          </div>
-        </form>
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>New newsletter</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleCreate} className="space-y-4">
+              {error && (
+                <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">{error}</p>
+              )}
+              <div className="space-y-1.5">
+                <Label htmlFor="name">Name</Label>
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="The Growth Brief" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="What is this newsletter about?"
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={creating || !name.trim()}>
+                {creating ? "Creating..." : "Create workspace"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
         <div className="lg:col-span-2">
           {loading ? (
-            <p className="text-sm text-zinc-500">Loading newsletters...</p>
+            <p className="text-sm text-muted-foreground">Loading...</p>
           ) : newsletters.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-zinc-300 p-12 text-center dark:border-zinc-700">
-              <p className="text-zinc-600 dark:text-zinc-400">
-                No newsletters yet. Create one to start building your fingerprint.
-              </p>
-            </div>
+            <EmptyState title="No newsletters yet" description="Create one to start building your fingerprint." />
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {newsletters.map((newsletter) => (
-                <Link
-                  key={newsletter.id}
-                  href={`/dashboard/newsletters/${newsletter.id}`}
-                  className="rounded-xl border border-zinc-200 bg-white p-6 transition hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600"
-                >
-                  <h3 className="font-semibold text-zinc-900 dark:text-zinc-50">
-                    {newsletter.name}
-                  </h3>
-                  {newsletter.description && (
-                    <p className="mt-2 line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">
-                      {newsletter.description}
-                    </p>
-                  )}
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                    <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                      {newsletter._count.archive} archive issues
-                    </span>
-                    <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                      {newsletter.fingerprint?.status ?? "PENDING"} fingerprint
-                    </span>
-                    <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                      {newsletter._count.drafts} drafts
-                    </span>
-                  </div>
-                </Link>
+            <motion.div
+              variants={stagger(0.05)}
+              initial="hidden"
+              animate="visible"
+              className="grid gap-4 sm:grid-cols-2"
+            >
+              {newsletters.map((n) => (
+                <motion.div key={n.id} variants={fadeUp} whileHover={{ y: -2 }}>
+                  <Link href={`/dashboard/newsletters/${n.id}`}>
+                    <Card className="h-full p-5 transition-colors hover:border-foreground/30">
+                      <p className="font-medium">{n.name}</p>
+                      {n.description && (
+                        <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">{n.description}</p>
+                      )}
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <Badge variant="outline">{n._count.archive} issues</Badge>
+                        <Badge variant={n.fingerprint?.status === "READY" ? "success" : "outline"}>
+                          {(n.fingerprint?.status ?? "pending").toLowerCase()}
+                        </Badge>
+                      </div>
+                    </Card>
+                  </Link>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
         </div>
       </div>

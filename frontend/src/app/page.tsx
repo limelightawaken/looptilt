@@ -144,14 +144,14 @@ export default function LandingPage() {
                 No ESP integration required. Value on day one.
               </p>
             </div>
-            <div className="rounded-xl border border-zinc-200 bg-white p-6 opacity-90 dark:border-zinc-800 dark:bg-zinc-900">
-              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                v2 — roadmap
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-6 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                shipping now
               </p>
               <h3 className="mt-2 text-xl font-semibold">Re-segmentation Loop</h3>
               <p className="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                In-email signals reshape the next send per reader. Ghostwriter assembles per-reader
-                variants from modular blocks — affordable personalization at scale.
+                Kit signals reshape each reader&apos;s fingerprint and segment. The ghostwriter assembles
+                one variant per segment from modular blocks — affordable personalization at scale.
               </p>
             </div>
           </div>
@@ -161,9 +161,8 @@ export default function LandingPage() {
           <div className="mx-auto max-w-6xl px-4 text-center sm:px-6">
             <h2 className="text-2xl font-bold">Built for newsletter operators, not generic AI demos</h2>
             <p className="mx-auto mt-4 max-w-xl text-zinc-400">
-              This repository implements v1 end-to-end: archive ingestion, fingerprint generation,
-              and ghostwriter drafts — with the schema and architecture ready for ESP-backed
-              re-segmentation in v2.
+              End-to-end: archive ingestion, fingerprint generation, Kit signal capture, the
+              reader-fingerprint and segmentation loop, and per-segment voice-preserving sends.
             </p>
             <Link
               href="/signup"

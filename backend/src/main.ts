@@ -78,6 +78,14 @@ async function bootstrap() {
     .addTag('auth', 'Authentication endpoints (Better Auth)')
     .addTag('newsletters', 'Newsletter workspaces and archive management')
     .addTag('fingerprints', 'Structured content understanding from archive')
+    .addTag('ghostwriter', 'Voice-preserving drafts and modular content blocks')
+    .addTag('esp', 'ESP (Kit) connection and data-source mode')
+    .addTag('simulator', 'Local signal simulator (development only)')
+    .addTag('signals', 'Inbound Kit webhook ingestion')
+    .addTag('readers', 'Per-subscriber reader fingerprints and insights')
+    .addTag('segments', 'Default and AI-built segments')
+    .addTag('loop', 'Re-segmentation recompute orchestration')
+    .addTag('sends', 'Per-segment variant generation and delivery')
     .addTag('users', 'User management endpoints')
     .build();
 

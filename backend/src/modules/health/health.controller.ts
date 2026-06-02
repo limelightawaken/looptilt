@@ -16,6 +16,13 @@ export class HealthController {
     return this.healthService.check();
   }
 
+  @Get('readiness')
+  @ApiOperation({ summary: 'Report AI provider and per-data-source connection counts' })
+  @ApiResponse({ status: 200, description: 'Readiness details' })
+  readiness() {
+    return this.healthService.readiness();
+  }
+
   @Get('db')
   @ApiOperation({ summary: 'Check database connection health' })
   @ApiResponse({ status: 200, description: 'Database is connected' })

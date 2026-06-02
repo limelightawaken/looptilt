@@ -1,0 +1,661 @@
+---
+alwaysApply: true
+---
+# Agent Instructions — Next.js Frontend
+
+## Philosophy
+
+Build interfaces that feel inevitable — where every interaction feels like it was designed specifically for the user. Aspire to Apple-level craft: purposeful animation, generous whitespace, typographic hierarchy, and micro-interactions that reward attention. Beauty is not decoration; it is clarity made visible.
+
+-----
+
+## 1. Architecture & File Organization
+
+### Project Structure
+
+```
+src/
+├── app/                    # Next.js App Router — pages & layouts only
+│   ├── (auth)/             # Route groups for logical grouping
+│   ├── layout.tsx          # Root layout — providers, fonts, global styles
+│   └── page.tsx            # Page files compose feature components
+├── components/
+│   ├── ui/                 # shadcn/ui primitives (Button, Input, Dialog…)
+│   ├── shared/             # Cross-feature reusable components (PageHeader, EmptyState, DataTable…)
+│   └── features/           # Feature-scoped components grouped by domain
+│       ├── auth/
+│       ├── dashboard/
+│       └── settings/
+├── hooks/                  # Custom React hooks
+├── lib/                    # Utilities, constants, helpers
+│   ├── utils.ts            # General utilities (cn(), formatDate…)
+│   ├── api.ts              # API client / fetch wrappers
+│   └── constants.ts        # App-wide constants
+├── stores/                 # Zustand stores (one file per domain)
+├── schemas/                # Zod schemas (validation + type inference)
+├── types/                  # Shared TypeScript types (only what Zod doesn't cover)
+└── styles/                 # Global CSS, Tailwind config extensions
+```
+
+### Rules
+
+- **Pages are composers, not implementors.** A page file imports feature components and arranges them. It contains no business logic, no direct API calls, no complex markup.
+- **Every file < 150 lines.** If a file exceeds this, extract a component, hook, or utility. Small files are debuggable files.
+- **One component per file.** Named export matches filename. No default exports except pages/layouts.
+- **Co-locate tests.** `ComponentName.test.tsx` lives next to `ComponentName.tsx`.
+
+-----
+
+## 2. Component Design Principles
+
+### Hierarchy
+
+```
+Page → Feature Component → Shared Component → UI Primitive (shadcn)
+```
+
+### Before Creating Any Component, Ask:
+
+1. **Does this already exist in `ui/` (shadcn)?** Use it. Extend via `className` or composition.
+1. **Does this already exist in `shared/`?** Use it. If it needs slight variation, make it configurable via props — don’t duplicate.
+1. **Is this specific to one feature?** Place in `features/{domain}/`.
+1. **Will two or more features use this?** Place in `shared/`.
+
+### Component Contracts
+
+```tsx
+// ✅ Props are explicit, typed, and minimal
+interface MetricCardProps {
+  label: string;
+  value: string | number;
+  trend?: { direction: "up" | "down"; percentage: number };
+  className?: string;  // Always allow className passthrough
+}
+
+// ✅ Compose, don't configure
+// Bad:  <Card variant="metric" showTrend trendDirection="up" />
+// Good: <MetricCard trend={{ direction: "up", percentage: 12 }} />
+```
+
+### Rules
+
+- **Props down, events up.** Components receive data via props and communicate via callbacks. No reaching into parent state.
+- **Favor composition over configuration.** Use `children`, render props, or slots instead of boolean prop explosions.
+- **No prop drilling beyond 2 levels.** If you’re passing a prop through an intermediary that doesn’t use it, use Zustand or React Context.
+- **Always accept `className`.** Every shared/UI component must merge external classes via `cn()` from `lib/utils.ts`.
+
+-----
+
+## 3. Styling with Tailwind CSS
+
+### Design Tokens — Use Them Religiously
+
+Tailwind v4 uses a CSS-first configuration model. There is **no `tailwind.config.ts`**. All customization lives in your global CSS file via `@theme`.
+
+```css
+/* styles/globals.css */
+@import "tailwindcss";
+
+@theme {
+  /* --- Colors (semantic tokens via CSS variables) --- */
+  --color-border: hsl(var(--border));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  /* --- Border Radius --- */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  /* --- Custom Spacing (only if you need beyond the default scale) --- */
+  /* --spacing-18: 4.5rem; */
+
+  /* --- Fonts --- */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Light/dark mode CSS variable definitions */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 3.9%;
+  --primary: 0 0% 9%;
+  --primary-foreground: 0 0% 98%;
+  /* ... full token set ... */
+  --radius: 0.625rem;
+}
+
+.dark {
+  --background: 0 0% 3.9%;
+  --foreground: 0 0% 98%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 0 0% 9%;
+  /* ... full dark token set ... */
+}
+```
+
+### Tailwind v4 Key Differences — Know These
+
+- **No `tailwind.config.ts`.** All configuration via `@theme` in CSS.
+- **`@theme` defines design tokens** that become Tailwind utilities automatically. `--color-primary: ...` generates `bg-primary`, `text-primary`, etc.
+- **`@import "tailwindcss"`** replaces the old `@tailwind base/components/utilities` directives.
+- **Automatic content detection.** No `content: [...]` config needed — Tailwind v4 scans your project automatically.
+- **CSS-native `@theme inline`** can be used to define tokens that don’t generate utility classes (internal-only variables).
+- **New default color palette.** Tailwind v4 uses OKLCH colors by default. When using shadcn’s HSL-based tokens, define them explicitly in `@theme`.
+
+### Rules
+
+- **No inline `style={{}}`.** Everything through Tailwind or CSS variables.
+- **No arbitrary values like `w-[347px]`.** If a spacing/size isn’t in your scale, add it to `@theme`.
+- **Use `cn()` for conditional classes.** Never string concatenation.
+
+```tsx
+import { cn } from "@/lib/utils";
+
+<div className={cn(
+  "rounded-lg border bg-card p-6 transition-all duration-200",
+  isActive && "ring-2 ring-primary/20 shadow-md",
+  className
+)} />
+```
+
+- **Responsive design is mandatory.** Mobile-first: start with base, layer `sm:`, `md:`, `lg:`.
+- **Dark mode from day one.** Use semantic color tokens (not `bg-white`/`bg-gray-900`). shadcn handles this via CSS variables defined in `:root` / `.dark`.
+- **Extend via `@theme`, not arbitrary values.** If you need a custom token more than once, add it to `@theme` so it’s a first-class utility.
+
+-----
+
+## 4. Delightful Interactions & Animation
+
+### Motion Principles
+
+- **Purposeful.** Every animation communicates something — entrance, feedback, spatial relationship.
+- **Fast.** Most transitions: `150ms–300ms`. Easing: `easeOut` for entrances, `easeIn` for exits, spring for playful interactions.
+- **Subtle.** If the user consciously notices the animation, it’s probably too much.
+- **Consistent.** Use shared motion presets — never ad-hoc duration/easing values scattered across components.
+
+### Framer Motion Setup
+
+Use `framer-motion` as the primary animation library. Tailwind transitions are acceptable only for trivial hover/focus states. Anything involving enter/exit, layout shifts, gestures, or orchestration must use Framer Motion.
+
+#### Shared Motion Presets
+
+Define once in `lib/motion.ts`. Import everywhere. Never hardcode duration/easing in components.
+
+```tsx
+// lib/motion.ts
+import { type Variants, type Transition } from "framer-motion";
+
+// --- Transitions ---
+export const transition = {
+  fast: { duration: 0.15, ease: "easeOut" } satisfies Transition,
+  base: { duration: 0.25, ease: [0.25, 0.1, 0.25, 1] } satisfies Transition,
+  slow: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] } satisfies Transition,
+  spring: { type: "spring", stiffness: 350, damping: 30 } satisfies Transition,
+  springBouncy: { type: "spring", stiffness: 400, damping: 17 } satisfies Transition,
+};
+
+// --- Variant Presets ---
+export const fadeIn: Variants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: transition.base },
+  exit: { opacity: 0, transition: transition.fast },
+};
+
+export const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: transition.base },
+  exit: { opacity: 0, y: -8, transition: transition.fast },
+};
+
+export const fadeDown: Variants = {
+  hidden: { opacity: 0, y: -12 },
+  visible: { opacity: 1, y: 0, transition: transition.base },
+};
+
+export const scaleIn: Variants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: { opacity: 1, scale: 1, transition: transition.spring },
+  exit: { opacity: 0, scale: 0.97, transition: transition.fast },
+};
+
+export const slideInRight: Variants = {
+  hidden: { opacity: 0, x: 20 },
+  visible: { opacity: 1, x: 0, transition: transition.base },
+  exit: { opacity: 0, x: -10, transition: transition.fast },
+};
+
+// --- Stagger Container ---
+export const stagger = (staggerDelay = 0.05): Variants => ({
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: staggerDelay, delayChildren: 0.05 },
+  },
+});
+
+// --- Reduced Motion Helper ---
+export const reducedMotion: Variants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.01 } },
+};
+```
+
+#### Reusable Motion Wrapper Component
+
+```tsx
+// components/shared/motion-wrapper.tsx
+"use client";
+
+import { motion, type Variants, AnimatePresence } from "framer-motion";
+import { fadeUp, reducedMotion } from "@/lib/motion";
+
+interface MotionWrapperProps {
+  children: React.ReactNode;
+  variants?: Variants;
+  className?: string;
+  delay?: number;
+  as?: keyof typeof motion;  // "div" | "section" | "ul" | "li" etc.
+}
+
+export function MotionWrapper({
+  children,
+  variants = fadeUp,
+  className,
+  delay = 0,
+  as = "div",
+}: MotionWrapperProps) {
+  const Component = motion[as];
+
+  return (
+    <Component
+      variants={variants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      className={className}
+      custom={delay}
+      // Respect prefers-reduced-motion at the component level
+      {...(typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches && {
+          variants: reducedMotion,
+        })}
+    >
+      {children}
+    </Component>
+  );
+}
+```
+
+### Standard Animation Patterns
+
+```tsx
+// --- Page / Section Entrance ---
+<motion.div variants={fadeUp} initial="hidden" animate="visible">
+  <PageContent />
+</motion.div>
+
+// --- Staggered List ---
+<motion.ul variants={stagger(0.06)} initial="hidden" animate="visible">
+  {items.map((item) => (
+    <motion.li key={item.id} variants={fadeUp}>
+      <ItemCard item={item} />
+    </motion.li>
+  ))}
+</motion.ul>
+
+// --- Enter/Exit (Conditional Rendering) ---
+<AnimatePresence mode="wait">
+  {isOpen && (
+    <motion.div
+      key="panel"
+      variants={scaleIn}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+    >
+      <PanelContent />
+    </motion.div>
+  )}
+</AnimatePresence>
+
+// --- Layout Animations (Reordering, Expanding) ---
+<motion.div layout layoutId={`card-${item.id}`} transition={transition.spring}>
+  <Card />
+</motion.div>
+
+// --- Hover & Tap (Gestural Micro-Interactions) ---
+<motion.button
+  whileHover={{ scale: 1.02, y: -1 }}
+  whileTap={{ scale: 0.98 }}
+  transition={transition.spring}
+>
+  Click me
+</motion.button>
+
+// --- Skeleton → Content Crossfade ---
+<AnimatePresence mode="wait">
+  {isLoading ? (
+    <motion.div key="skeleton" variants={fadeIn} initial="hidden" animate="visible" exit="exit">
+      <Skeleton />
+    </motion.div>
+  ) : (
+    <motion.div key="content" variants={fadeUp} initial="hidden" animate="visible" exit="exit">
+      <ActualContent />
+    </motion.div>
+  )}
+</AnimatePresence>
+```
+
+### When to Use Tailwind vs Framer Motion
+
+|Use Tailwind transitions for…|Use Framer Motion for…                                          |
+|-----------------------------|----------------------------------------------------------------|
+|Hover color/bg shifts        |Enter / exit animations                                         |
+|Focus ring appearance        |Staggered list reveals                                          |
+|Simple opacity on hover      |Layout animations (reorder, expand)                             |
+|Cursor/pointer changes       |Shared layout transitions (`layoutId`)                          |
+|                             |Gesture-based interactions (drag, tap, hover with physics)      |
+|                             |Orchestrated sequences                                          |
+|                             |Scroll-triggered animations                                     |
+|                             |Any animation with `AnimatePresence` (conditional mount/unmount)|
+
+### Interaction Signatures
+
+- **Loading states:** Crossfade from skeleton to content using `AnimatePresence mode="wait"`. Spinners only for inline actions (button submissions).
+- **Hover states:** Every clickable element has a visible hover state. Cards use `whileHover={{ y: -2, shadow }}`. Buttons use `whileTap={{ scale: 0.98 }}`.
+- **Focus states:** Visible, accessible focus rings using `focus-visible:ring-2 ring-ring ring-offset-2` (Tailwind — no Framer needed).
+- **Empty states:** Beautiful, helpful illustrations that `fadeUp` into view with a clear CTA. Never just “No data.”
+- **Toasts for feedback:** Use `sonner` (already in shadcn). Success = subtle. Error = prominent. Always auto-dismiss success toasts.
+- **Optimistic updates:** For mutations, update UI immediately with layout animations for seamless visual continuity.
+- **Page transitions:** Use `AnimatePresence` with `mode="wait"` in layouts for smooth route-level transitions.
+
+### Micro-Interactions Checklist
+
+- [ ] Buttons show loading spinner with `AnimatePresence` crossfade + disabled state during async operations
+- [ ] Form inputs show validation state with smooth color transitions (Tailwind `transition-colors`)
+- [ ] Lists animate items in with `stagger()` + `fadeUp` variants
+- [ ] Conditional UI uses `AnimatePresence` — nothing pops in/out without a transition
+- [ ] Cards and interactive surfaces use `whileHover` / `whileTap` for physicality
+- [ ] Modals/dialogs use `scaleIn` variants with backdrop `fadeIn`
+- [ ] Reorderable items use `layout` prop for smooth position changes
+- [ ] Shared elements across views use `layoutId` for visual continuity
+- [ ] Tooltips use `fadeIn` with a 200ms delay via `transition={{ delay: 0.2 }}`
+- [ ] `prefers-reduced-motion` is respected — decorative animations are suppressed
+
+-----
+
+## 5. State Management with Zustand
+
+### Store Design
+
+One store per domain. Keep stores thin — they hold state and simple actions, not business logic.
+
+```tsx
+// stores/use-project-store.ts
+import { create } from "zustand";
+import { immer } from "zustand/middleware/immer";
+
+interface ProjectState {
+  projects: Project[];
+  activeProjectId: string | null;
+  isLoading: boolean;
+}
+
+interface ProjectActions {
+  setProjects: (projects: Project[]) => void;
+  setActiveProject: (id: string | null) => void;
+  addProject: (project: Project) => void;
+  removeProject: (id: string) => void;
+}
+
+export const useProjectStore = create<ProjectState & ProjectActions>()(
+  immer((set) => ({
+    projects: [],
+    activeProjectId: null,
+    isLoading: false,
+
+    setProjects: (projects) => set((s) => { s.projects = projects }),
+    setActiveProject: (id) => set((s) => { s.activeProjectId = id }),
+    addProject: (project) => set((s) => { s.projects.push(project) }),
+    removeProject: (id) => set((s) => {
+      s.projects = s.projects.filter((p) => p.id !== id);
+    }),
+  }))
+);
+```
+
+### Rules
+
+- **Use selectors.** Never `const store = useProjectStore()`. Always `const projects = useProjectStore((s) => s.projects)` to avoid unnecessary re-renders.
+- **No API calls inside stores.** Stores are state containers. Data fetching happens in hooks or server components.
+- **Use `immer` middleware** for stores with nested state updates.
+- **Ephemeral UI state stays in React.** Modal open/close, hover states, local form inputs — use `useState`. Zustand is for shared cross-component state.
+- **Derive, don’t store.** If a value can be computed from existing state, compute it with a selector, don’t store it separately.
+
+```tsx
+// ✅ Derived state via selector
+const activeProject = useProjectStore(
+  (s) => s.projects.find((p) => p.id === s.activeProjectId) ?? null
+);
+```
+
+-----
+
+## 6. Form Handling & Validation with Zod
+
+### Schema-First Approach
+
+Define Zod schemas in `schemas/`. Infer TypeScript types from them. Single source of truth.
+
+```tsx
+// schemas/project.ts
+import { z } from "zod";
+
+export const createProjectSchema = z.object({
+  name: z.string()
+    .min(1, "Project name is required")
+    .max(100, "Project name must be under 100 characters")
+    .trim(),
+  description: z.string().max(500).optional(),
+  visibility: z.enum(["public", "private"]),
+});
+
+export type CreateProjectInput = z.infer<typeof createProjectSchema>;
+```
+
+### Form Implementation
+
+Use `react-hook-form` + `@hookform/resolvers/zod` for all forms.
+
+```tsx
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { createProjectSchema, type CreateProjectInput } from "@/schemas/project";
+
+const form = useForm<CreateProjectInput>({
+  resolver: zodResolver(createProjectSchema),
+  defaultValues: { name: "", description: "", visibility: "private" },
+});
+```
+
+### Rules
+
+- **All external data is validated.** API responses, URL params, form inputs — parse with Zod.
+- **User-facing error messages in the schema.** Not in the component.
+- **Share schemas between frontend and API routes** when using Next.js API routes or server actions.
+- **Never trust `any`.** If you write `as any`, you owe the codebase a schema.
+
+-----
+
+## 7. Security Best Practices
+
+### Input & Data
+
+- **Sanitize all user input** before rendering. Use Zod for structural validation; use `DOMPurify` if rendering HTML.
+- **Validate on both client and server.** Client validation is for UX. Server validation is for security.
+- **Never expose secrets.** Only `NEXT_PUBLIC_` env vars reach the browser. Double-check `.env` usage.
+
+### Authentication & Authorization
+
+- **Auth checks in middleware** (`middleware.ts`) for route protection. Don’t rely on client-side checks alone.
+- **CSRF protection** for all mutations. Next.js server actions handle this; for API routes, use tokens.
+- **HttpOnly, Secure, SameSite cookies** for session tokens. Never `localStorage` for auth.
+
+### Headers & Transport
+
+```ts
+// next.config.ts — security headers
+const securityHeaders = [
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  { key: "X-DNS-Prefetch-Control", value: "on" },
+];
+```
+
+- **Strict CSP** in production. Use `nonce`-based CSP with Next.js.
+- **Rate limiting** on API routes (use `upstash/ratelimit` or similar).
+- **No `dangerouslySetInnerHTML`** unless content is sanitized AND there’s a documented reason.
+
+### Dependencies
+
+- **Audit regularly.** `pnpm audit` in CI.
+- **Pin versions.** Use exact versions in `package.json`, not ranges.
+- **Minimize dependencies.** Every dependency is an attack surface. If you can write it in 20 lines, don’t install a package.
+
+-----
+
+## 8. Performance
+
+- **Server Components by default.** Only add `"use client"` when you need interactivity, hooks, or browser APIs.
+- **Dynamic imports** for heavy components not needed on initial render: `next/dynamic` with `ssr: false` where appropriate.
+- **Image optimization.** Always `next/image`. Always set `width`/`height` or use `fill`. Use `priority` for above-fold hero images.
+- **Bundle analysis.** Run `@next/bundle-analyzer` periodically. No single page JS bundle > 200KB.
+- **Prefetch intelligently.** `<Link>` prefetches by default. Disable for low-priority links: `prefetch={false}`.
+- **Debounce expensive operations.** Search inputs, window resize handlers, scroll listeners.
+
+-----
+
+## 9. Code Quality & Patterns
+
+### Clean Code — With Reason
+
+Apply clean code principles where they improve clarity and maintainability. Don’t blindly follow rules.
+
+- **Name things by what they represent, not what they are.** `useProjectPermissions` not `useData2`.
+- **Functions do one thing.** If describing a function requires “and,” split it.
+- **Early returns over deep nesting.**
+
+```tsx
+// ✅ 
+if (!user) return <AuthPrompt />;
+if (!project) return <NotFound />;
+return <ProjectDashboard project={project} />;
+
+// ❌
+if (user) {
+  if (project) {
+    return <ProjectDashboard project={project} />;
+  } else {
+    return <NotFound />;
+  }
+} else {
+  return <AuthPrompt />;
+}
+```
+
+- **Extract magic values.** No `if (role === "admin")`. Use `const ROLES = { ADMIN: "admin" } as const`.
+- **Comments explain *why*, not *what*.** The code says what. Comments say why it’s not obvious.
+
+### SOLID (Adapted for React)
+
+|Principle                    |In React                                                                           |
+|-----------------------------|-----------------------------------------------------------------------------------|
+|**S** — Single Responsibility|Each component has one reason to change. A `UserAvatar` doesn’t fetch user data.   |
+|**O** — Open/Closed          |Extend via composition (`children`, slots), not by modifying source.               |
+|**L** — Liskov Substitution  |A `shared/Button` works anywhere a `ui/Button` works. Don’t break the contract.    |
+|**I** — Interface Segregation|Don’t force components to accept props they don’t use. Split large prop interfaces.|
+|**D** — Dependency Inversion |Components depend on abstractions (hooks, contexts), not concrete implementations. |
+
+### DRY — But Don’t Over-Abstract
+
+- **Rule of Three.** Duplicate code is tolerated twice. On the third occurrence, extract.
+- **Wrong abstraction is worse than duplication.** If two components share 60% logic but differ in intent, keep them separate and extract only the truly shared pieces (hooks, utilities).
+
+-----
+
+## 10. Error Handling
+
+- **Error boundaries** at the page and feature level. Use `error.tsx` in App Router.
+- **Graceful degradation.** If a non-critical feature fails, the page still works.
+- **User-friendly messages.** Never show raw error objects, stack traces, or technical jargon to users.
+- **Log structurally.** Errors sent to logging include: message, component, user context, timestamp.
+
+```tsx
+// app/dashboard/error.tsx
+"use client";
+
+export default function DashboardError({ error, reset }: { error: Error; reset: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 py-20">
+      <h2 className="text-lg font-semibold">Something went wrong</h2>
+      <p className="text-sm text-muted-foreground">We couldn't load your dashboard. Please try again.</p>
+      <Button onClick={reset} variant="outline">Try again</Button>
+    </div>
+  );
+}
+```
+
+-----
+
+## 11. Accessibility
+
+Accessibility is not optional. It is a core feature.
+
+- **Semantic HTML.** `<button>` not `<div onClick>`. `<nav>`, `<main>`, `<article>`, `<section>`.
+- **Keyboard navigable.** Every interactive element reachable and operable via keyboard.
+- **ARIA when needed.** shadcn components handle most ARIA. For custom components, add `aria-label`, `aria-describedby`, `role` where appropriate.
+- **Color is not the only indicator.** Errors show icons + text, not just red borders.
+- **Minimum contrast.** 4.5:1 for body text, 3:1 for large text.
+- **Reduced motion.** Respect `prefers-reduced-motion`. Wrap decorative animations:
+
+```tsx
+"motion-safe:animate-in motion-safe:fade-in"
+```
+
+-----
+
+## 12. Pre-Implementation Checklist
+
+Before writing any component, the agent must verify:
+
+- [ ] **Does this component or similar already exist?** Search `ui/`, `shared/`, `features/`.
+- [ ] **Is the file going to stay under 150 lines?** Plan extraction early.
+- [ ] **Are props minimal and typed?** No `any`. No unused props.
+- [ ] **Does it have loading, error, and empty states?**
+- [ ] **Is it accessible?** Keyboard, screen reader, contrast.
+- [ ] **Does it look and feel beautiful?** Spacing, alignment, typography hierarchy, transitions.
+- [ ] **Is it responsive?** Tested at 320px, 768px, 1024px, 1440px.
+- [ ] **Are there no duplicated patterns?** Shared logic extracted to hooks/utilities.
+- [ ] **Is external data validated with Zod?**
+- [ ] **Does it follow the component hierarchy?** Page → Feature → Shared → UI.

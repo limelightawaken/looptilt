@@ -32,7 +32,9 @@ These look like two problems. They are one problem wearing two coats: **nothing 
 
 If you build one thing that genuinely understands a newsletter's content, you can solve both at once, and the solutions reinforce each other.
 
-That one thing is the **fingerprint**: a structured representation of a newsletter built by an AI that reads its archive. Topics and sub-topics. Voice and tone. Audience profile. Typical depth and format. Recurring obsessions. The things a good editor would notice on a careful read.
+That one thing is the **newsletter fingerprint**: a structured representation of a newsletter built by an AI that reads its archive. Topics and sub-topics. Voice and tone. Audience profile. Typical depth and format. Recurring obsessions. The things a good editor would notice on a careful read.
+
+It has a per-subscriber counterpart. Once the engine understands the newsletter, it can score every reader against that same understanding to produce a **reader fingerprint**: a living per-person profile of topic affinities, depth and tone preference, lifecycle stage, and churn propensity (Section 6B). The newsletter fingerprint says what the publication is; the reader fingerprint says what each reader is to it. The reader fingerprint is what decides a reader's segment, and segments are what the loop sends to.
 
 Build that, and two features fall out of it, paired so that each one removes a blocker the other would otherwise hit.
 
@@ -53,18 +55,18 @@ Build that, and two features fall out of it, paired so that each one removes a b
           │ LOOP         │     │             │
           └──────────────┘◀────└─────────────┘
                  │      tells the ghostwriter
-                 │      what to assemble per reader
+                 │      what to assemble per segment
                  ▼
-          adaptive issue, per reader
+          adaptive issue, per segment
 ```
 
 The dependency, in plain words:
 
-**Re-segmentation makes the email engaging, but it produces demand the creator cannot meet alone.** Each signal teaches the engine what a specific reader wants, so the next issue's angle should shift toward them. The problem: if every reader wants a slightly different issue, someone has to produce all those variants.
+**Re-segmentation makes the email engaging, but it produces demand the creator cannot meet alone.** Each signal sharpens a reader's fingerprint and may move them into a different segment, so the next issue's angle should shift toward each segment. The problem: if every segment wants a slightly different issue, someone has to produce all those variants.
 
-**Ghostwriter makes that demand affordable.** Personalizing per reader would normally mean writing infinite drafts, which no creator can do. The ghostwriter learns the creator's voice from the archive, so the creator writes once (a menu of blocks) and the engine assembles and renders the per-reader variants *in the creator's own voice*. Without this, the loop generates a workload nobody can fulfil.
+**Ghostwriter makes that demand affordable.** Personalizing per segment would normally mean writing a fresh draft for each one, which no creator can do at cadence. The ghostwriter learns the creator's voice from the archive, so the creator writes once (a menu of blocks) and the engine assembles and renders the per-segment variants *in the creator's own voice*. Without this, the loop generates a workload nobody can fulfil.
 
-So the loop *creates* the personalization demand and the ghostwriter *satisfies* it, both drawing on the same fingerprint. Two features, one engine, mutually enabling.
+So the loop *creates* the personalization demand and the ghostwriter *satisfies* it, both drawing on the same newsletter fingerprint. Two features, one engine, mutually enabling.
 
 **Cold-start (no matchmaker).** A brand-new subscriber has no behavioral signal yet. Rather than guess, the loop leans on acquisition signals (Section 6.1), which issue or topic they signed up from, which channel, which campaign, plus a sensible default issue, and starts genuinely personalizing once roughly 5 to 10 issues of signal accrue. The honest version: the first handful of issues are lightly informed, not adaptive, and the product earns its keep from there.
 
@@ -74,29 +76,29 @@ So the loop *creates* the personalization demand and the ghostwriter *satisfies*
 
 ### 5.1 Re-segmentation loop (engagement + retention)
 
-**What it does.** A small interaction sits inside each issue (a tap-to-rate, a "more of this / less of that," a one-question poll). Each tap is a behavioral signal. The engine reads that tap plus the reader's history and reshapes the *next* send's angle for that reader: which block leads, what depth, what tone, what gets cut.
+**What it does.** A small interaction sits inside each issue (a tap-to-rate, a "more of this / less of that," a one-question poll). Each tap is a behavioral signal. The engine reads that tap plus the reader's history, updates the reader's fingerprint (Section 6B), and re-files them into the segment that now fits them. It then reshapes the *next* send's angle per segment: which block leads, what depth, what tone, what gets cut.
 
-**Why it is novel.** Almost all AI-and-newsletter effort points at drafting. This points at the *feedback loop*. The AI is not the writer; it is the learner and router. It watches behavior and adapts delivery. Over weeks, two readers on the same list are effectively reading different newsletters, each shaped toward them.
+**Why it is novel.** Almost all AI-and-newsletter effort points at drafting. This points at the *feedback loop*. The AI is not the writer; it is the learner and router. It watches behavior and adapts delivery. Over weeks, two readers who land in different segments are effectively reading different newsletters, each shaped toward them.
 
 **Inputs.** The full reader signal surface (see Section 6, the signal taxonomy) + (at cold-start) acquisition signals.
 
-**Outputs.** An evolving per-reader profile, and a per-reader assembly instruction for the next issue.
+**Outputs.** An evolving reader fingerprint per subscriber and the segment it places them in (Section 6B), and a per-segment assembly instruction for the next issue.
 
-**Role in the loop.** Generates the signal that makes the product get smarter the longer someone reads, and creates the per-reader personalization demand the ghostwriter fulfils.
+**Role in the loop.** Generates the signal that makes the product get smarter the longer someone reads, and creates the per-segment personalization demand the ghostwriter fulfils.
 
-**Honest constraint.** Reshaping per reader requires *modular* content. The creator writes a menu of blocks; the engine selects and orders them per reader. It does not invent content per person from nothing. This is also what keeps the ghostwriter's job tractable.
+**Honest constraint.** Reshaping per segment requires *modular* content. The creator writes a menu of blocks; the engine selects and orders them per segment. It does not invent content per person from nothing. This is also what keeps the ghostwriter's job tractable, and it is why the product sends to a bounded set of segments rather than to individuals.
 
 ### 5.2 Ghostwriter (affordable output)
 
-**What it does.** Learns a newsletter's voice from its archive (paste or import past issues), then drafts new content, and the per-reader variants the loop needs, in that voice.
+**What it does.** Learns a newsletter's voice from its archive (paste or import past issues), then drafts new content, and the per-segment variants the loop needs, in that voice.
 
 **Why it is novel relative to generic AI writers.** The angle is voice-cloning-from-archive, not generic generation. It is not "write me a newsletter about X." It is "write the next issue the way *this* newsletter writes," learned from real sends.
 
 **Inputs.** Newsletter fingerprint (voice component) + the creator's outline or block menu.
 
-**Outputs.** Drafts and per-reader variants that preserve the creator's voice.
+**Outputs.** Drafts and per-segment variants that preserve the creator's voice.
 
-**Role in the loop.** Eliminates the infinite-drafts problem, turning the loop's per-reader demand into output the creator never has to hand-write.
+**Role in the loop.** Eliminates the infinite-drafts problem, turning the loop's per-segment demand into output the creator never has to hand-write.
 
 ---
 
@@ -176,6 +178,46 @@ Three rules govern how the loop uses the surface:
 
 ---
 
+## 6B. The reader fingerprint and segments
+
+The signal taxonomy is raw material. This section is what the loop builds out of it: a per-subscriber fingerprint, and the segments that fingerprint sorts readers into. Crucially, **sends are per-segment, not per-person.** The fingerprint is computed for every individual, but delivery targets segments, which is what every ESP can actually do (Section 7B) and what keeps the creator's and ghostwriter's variant count bounded.
+
+### 6B.1 The reader fingerprint (per subscriber)
+
+Where the newsletter fingerprint (Section 7) captures what the *publication* is, the **reader fingerprint** captures what each *subscriber* is to that publication. It is the per-person rollup of the entire signal surface in Section 6, scored against the newsletter's own topics, so it is always expressed in the publication's native vocabulary rather than generic demographics.
+
+Each reader fingerprint holds:
+
+- **Topic affinities**: the per-topic interest scores and trends from 6.5, the spine of the fingerprint.
+- **Depth and tone preference**: inferred from read-depth and click behavior, quick-take vs deep-dive, which formats they actually finish.
+- **Lifecycle stage**: new / warming / engaged / cooling / dormant / reactivated, derived from the engagement trajectory in 6.6.
+- **Churn propensity**: a single forward-looking risk score driven primarily by the *slope* of engagement (the derivative rule in 6.7), not its current level, so a high-but-falling reader scores riskier than a low-but-stable one.
+- **Segment membership**: which segment(s) the reader currently falls into (below).
+
+The fingerprint is recomputed every send as new signals land, so it is a living profile, not a one-time label. It is the artifact written back to the ESP as custom fields and tags (Section 7B, Job 2), and it is the thing every segment is defined over.
+
+### 6B.2 Default segments (zero setup)
+
+A set of segments ships out of the box, derived directly from the reader fingerprint so they work before a creator configures anything:
+
+- **By lifecycle**: New, Engaged, Cooling (churn-risk), Dormant, Reactivated.
+- **By depth preference**: Skimmers vs Deep readers.
+- **By top affinity**: one segment per dominant fingerprint topic, so the list auto-organizes around what the newsletter actually covers.
+
+These cover the common cases with no configuration, the Cooling / churn-risk segment in particular being the retention workhorse the loop intervenes on first.
+
+### 6B.3 AI-built custom segments
+
+Beyond the defaults, creators build their own segments **by description, not by query-builder**. The creator writes what they want in plain language, e.g. "readers who used to open everything but have cooled off in the last month and lean technical," and the AI:
+
+1. **Builds the rule.** It translates the description into concrete conditions over the available signals and fingerprint fields, topic affinities, trends, lifecycle stage, churn propensity, depth preference, and acquisition source.
+2. **Shows the rule back.** It presents the exact conditions and thresholds it chose in an editable form, plus a live estimate of how many subscribers match, so the creator can adjust any threshold or condition before saving.
+3. **Explains its rationale.** In plain language it states why it picked those signals, what each threshold is doing, and which signals it deliberately left out and why, so the creator trusts and understands the segment rather than receiving an opaque rule.
+
+The creator stays in control: the AI proposes, the creator inspects, adjusts, and approves. Saved custom segments become first-class alongside the defaults, carry a fingerprint-derived definition that re-evaluates every send, and write back to the ESP as tags for segment-based delivery.
+
+---
+
 ## 7. The shared engine: the fingerprint
 
 Everything above is a consumer of one artifact. The fingerprint is a structured profile produced by an AI reading a newsletter's archive. Conceptually it captures:
@@ -186,7 +228,7 @@ Everything above is a consumer of one artifact. The fingerprint is a structured 
 - **Depth and format**: how technical, how long, how it structures an issue.
 - **Obsessions**: the things this newsletter returns to that define its identity.
 
-Build this once, well, and the loop personalizes against one of them while the ghostwriter generates from the voice slice of the same one.
+Build this once, well, and everything downstream consumes it: each subscriber is scored against the topic slice to produce their reader fingerprint and segment (Section 6B), while the ghostwriter generates from the voice slice of the same one.
 
 ---
 
@@ -198,10 +240,10 @@ Integration has three distinct jobs. ESPs vary most on the third.
 
 **Job 1, read signals out.** Pull opens, clicks (ideally per-link, which we map to fingerprint topics), and lifecycle events into our engine. Mechanism: ESP webhooks, or polling an events API. This is the best-supported job across the board.
 
-**Job 2, write the reader profile back.** Our engine computes a per-reader topic matrix and a disengagement flag. Those need to live where the ESP can act on them, as custom fields and tags on the subscriber record. Well-supported by the major ESPs.
+**Job 2, write the reader fingerprint back.** Our engine computes each subscriber's reader fingerprint (the per-topic affinity matrix, lifecycle stage, churn propensity, and segment membership; Section 6B). Those need to live where the ESP can act on them, as custom fields and tags on the subscriber record. Well-supported by the major ESPs.
 
-**Job 3, get adaptive content in.** Deliver the per-reader variant. single segment based mechanisms
-- *Segment-based sends*: split the list into tag-defined segments and send each the matching variant (works on almost every ESP, coarser than true per-person).
+**Job 3, get adaptive content in.** Deliver the per-segment variant via a single segment-based mechanism:
+- *Segment-based sends*: split the list into tag-defined segments (the defaults and AI-built segments from Section 6B) and send each the matching variant (works on almost every ESP, the deliberate delivery model rather than a fallback for true per-person).
 
 ### Lead integration: Kit (ConvertKit)
 
@@ -229,7 +271,7 @@ The honest sequencing for a small team, given the dependency between the two fea
 
 **v1: Ghostwriter.** It works with nothing but an archive, no signals, no delivery infrastructure, no per-recipient sends. The creator pastes or imports past issues, the engine learns the voice, and it drafts in that voice immediately. It delivers value on day one, proves the fingerprint engine, and is the piece every creator wants regardless of the loop. Critically, it is also the prerequisite that makes the loop affordable, so it has to exist first anyway.
 
-**v2: Re-segmentation loop.** Once voice-preserving generation exists, the loop becomes buildable and affordable. This is the harder piece: it needs signal capture from the ESP (Section 7B), a per-reader topic matrix, and per-reader delivery. It is sequenced second because it depends on the ghostwriter to fulfil the personalization demand it creates, and on ESP integration to both read signals and deliver variants.
+**v2: Re-segmentation loop.** Once voice-preserving generation exists, the loop becomes buildable and affordable. This is the harder piece: it needs signal capture from the ESP (Section 7B), the reader fingerprint and segmentation layer (Section 6B), and per-segment delivery. It is sequenced second because it depends on the ghostwriter to fulfil the personalization demand it creates, and on ESP integration to both read signals and deliver variants.
 
 This sequencing is deliberate: v1 ships standalone value *and* builds the exact capability v2 needs to be viable. Nothing is built speculatively.
 
@@ -239,9 +281,9 @@ This sequencing is deliberate: v1 ships standalone value *and* builds the exact 
 
 **In-email interaction.** True in-inbox inputs require AMP for Email (renders in Gmail, Yahoo, Apple Mail) with a static fallback elsewhere. For discrete single-tap signals (rate, pick-one), pre-encoded links work everywhere with no AMP and no sender registration. The realistic build is layered: AMP where supported, pre-encoded links as the universal fallback, hosted micro-app for anything richer.
 
-**AI layer.** The fingerprint, the voice generation, and the per-reader assembly are all LLM jobs. The engineering challenge is not the model calls; it is the structured fingerprint schema and keeping it stable enough that both features can rely on it.
+**AI layer.** The newsletter fingerprint, the reader fingerprint and segmentation, the voice generation, and the per-segment assembly are all LLM jobs. The engineering challenge is not the model calls; it is the structured fingerprint schema and keeping it stable enough that both features can rely on it.
 
-**Per-recipient delivery (v2).** Either generate per-subscriber HTML at send time, or use an ESP that supports conditional content. This is the heaviest infrastructure piece and is correctly deferred to v2. See Section 7B for how this maps onto real ESPs.
+**Per-segment delivery (v2).** Generate one variant per segment (Section 6B) and send each segment its variant through the ESP's native segmentation, a broadcast per variant filtered to the matching tag. This is the heaviest infrastructure piece and is correctly deferred to v2. See Section 7B for how this maps onto real ESPs.
 
 ---
 
@@ -254,7 +296,7 @@ The product attacks the two numbers that decide whether a newsletter business su
 ## 11. Open questions
 
 - How much archive is enough to produce a reliable fingerprint, and how does fingerprint quality degrade with less input?
-- How faithfully can the ghostwriter hold a distinctive voice across many per-reader variants before drift becomes noticeable to the creator?
+- How faithfully can the ghostwriter hold a distinctive voice across many per-segment variants before drift becomes noticeable to the creator?
 - Where is the creepiness line on "the newsletter learns you," and how do we keep it feeling like the reader is *steering* rather than being watched?
 - What is the minimum modular-content structure a creator will actually maintain for the loop to function?
 - The loop starts producing useful decisions after roughly 5 to 10 issues of passive signal and sharpens from there. What is the precise break-even point where its decisions beat sending everyone the default, and how does that shift with list type and cadence?
