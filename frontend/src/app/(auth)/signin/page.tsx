@@ -42,11 +42,14 @@ export default function SignInPage() {
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 dark:bg-black">
       <div className="w-full max-w-md space-y-8 rounded-xl bg-white p-8 shadow-lg dark:bg-zinc-900">
         <div className="text-center">
+          <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-900 text-sm font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
+            LT
+          </div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
             Welcome back
           </h1>
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            Sign in to your account to continue
+            Sign in to your LoopTilt workspace
           </p>
         </div>
 

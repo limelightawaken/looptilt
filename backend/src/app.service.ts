@@ -7,7 +7,8 @@ export class AppService {
 
   getInfo() {
     return {
-      name: 'Tayo-Starter API',
+      name: 'LoopTilt API',
+      description: 'Newsletter Fingerprint Engine — understand your content, draft in your voice, personalize at scale.',
       version: '1.0.0',
       environment: this.configService.get<string>('NODE_ENV', 'development'),
     };

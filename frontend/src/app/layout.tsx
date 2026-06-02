@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tayo-Starter Kit",
-  description: "Tayo-Starter Kit Application",
+  title: "LoopTilt — Newsletter Fingerprint Engine",
+  description:
+    "Understand what your newsletter actually says. Build a fingerprint from your archive, draft in your voice, and personalize at scale.",
 };
 
 export default function RootLayout({

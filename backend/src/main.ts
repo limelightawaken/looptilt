@@ -68,12 +68,16 @@ async function bootstrap() {
 
   // Swagger documentation
   const config = new DocumentBuilder()
-    .setTitle('Tayo-Starter API')
-    .setDescription('The Tayo-Starter API documentation')
+    .setTitle('LoopTilt API')
+    .setDescription(
+      'LoopTilt (Newsletter Fingerprint Engine) API — archive ingestion, fingerprint generation, and voice-preserving ghostwriter drafts.',
+    )
     .setVersion('1.0')
     .addCookieAuth('better-auth.session_token')
     .addTag('health', 'Health check endpoints')
     .addTag('auth', 'Authentication endpoints (Better Auth)')
+    .addTag('newsletters', 'Newsletter workspaces and archive management')
+    .addTag('fingerprints', 'Structured content understanding from archive')
     .addTag('users', 'User management endpoints')
     .build();
 

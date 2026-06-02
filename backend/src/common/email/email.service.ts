@@ -47,10 +47,10 @@ export class EmailService {
   async sendWelcomeEmail(to: string, name: string): Promise<void> {
     await this.sendMail({
       to,
-      subject: 'Welcome to Tayo-Starter!',
+      subject: 'Welcome to LoopTilt!',
       html: `
         <h1>Welcome, ${name}!</h1>
-        <p>Thank you for signing up for Tayo-Starter. We're excited to have you on board!</p>
+        <p>Thank you for joining LoopTilt. Import your archive, generate your fingerprint, and start drafting in your voice.</p>
       `,
     });
   }

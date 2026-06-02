@@ -38,7 +38,17 @@ export async function apiRequest<T>(
   const text = await response.text();
   if (!text) return null as T;
 
-  return JSON.parse(text) as T;
+  const json = JSON.parse(text) as T | { success: boolean; data: T };
+  if (
+    json &&
+    typeof json === "object" &&
+    "success" in json &&
+    "data" in json
+  ) {
+    return (json as { data: T }).data;
+  }
+
+  return json as T;
 }
 
 export const api = {

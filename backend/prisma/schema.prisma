@@ -8,19 +8,18 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
+  id            String       @id @default(cuid())
+  email         String       @unique
   name          String?
-  emailVerified Boolean   @default(false)
+  emailVerified Boolean      @default(false)
   image         String?
-  role          Role      @default(USER)
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  // Better Auth relations
-  sessions Session[]
-  accounts Account[]
+  role          Role         @default(USER)
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  newsletters   Newsletter[]
 
   @@map("users")
 }
@@ -30,7 +29,6 @@ enum Role {
   ADMIN
 }
 
-// Better Auth Session model
 model Session {
   id        String   @id @default(cuid())
   expiresAt DateTime
@@ -45,7 +43,6 @@ model Session {
   @@map("sessions")
 }
 
-// Better Auth Account model (for OAuth and credentials)
 model Account {
   id                    String    @id @default(cuid())
   accountId             String
@@ -66,7 +63,6 @@ model Account {
   @@map("accounts")
 }
 
-// Better Auth Verification model
 model Verification {
   id         String   @id @default(cuid())
   identifier String
@@ -77,4 +73,108 @@ model Verification {
 
   @@unique([identifier, value])
   @@map("verifications")
+}
+
+model Newsletter {
+  id          String                  @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  espProvider EspProvider             @default(NONE)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  user        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  archive     ArchiveIssue[]
+  fingerprint NewsletterFingerprint?
+  drafts      GhostwriterDraft[]
+  esp         EspConnection?
+
+  @@index([userId])
+  @@map("newsletters")
+}
+
+enum EspProvider {
+  NONE
+  KIT
+  BEEHIIV
+  KLAVIYO
+  MAILCHIMP
+}
+
+model ArchiveIssue {
+  id           String     @id @default(cuid())
+  newsletterId String
+  title        String
+  content      String     @db.Text
+  publishedAt  DateTime?
+  sortOrder    Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  newsletter   Newsletter @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+
+  @@index([newsletterId])
+  @@map("archive_issues")
+}
+
+enum FingerprintStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+model NewsletterFingerprint {
+  id           String            @id @default(cuid())
+  newsletterId String            @unique
+  status       FingerprintStatus @default(PENDING)
+  version      Int               @default(1)
+  topics       Json?
+  voice        Json?
+  audience     Json?
+  depthFormat  Json?
+  obsessions   Json?
+  summary      String?           @db.Text
+  errorMessage String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  newsletter   Newsletter        @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+  drafts       GhostwriterDraft[]
+
+  @@map("newsletter_fingerprints")
+}
+
+enum DraftStatus {
+  DRAFT
+  REVIEW
+  APPROVED
+}
+
+model GhostwriterDraft {
+  id            String                 @id @default(cuid())
+  newsletterId  String
+  fingerprintId String?
+  title         String
+  outline       Json?
+  content       String                 @db.Text
+  status        DraftStatus            @default(DRAFT)
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  newsletter    Newsletter             @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+  fingerprint   NewsletterFingerprint? @relation(fields: [fingerprintId], references: [id], onDelete: SetNull)
+
+  @@index([newsletterId])
+  @@map("ghostwriter_drafts")
+}
+
+model EspConnection {
+  id           String     @id @default(cuid())
+  newsletterId String     @unique
+  provider     EspProvider
+  isActive     Boolean    @default(false)
+  lastSyncedAt DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  newsletter   Newsletter @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+
+  @@map("esp_connections")
 }
