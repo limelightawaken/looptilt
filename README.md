@@ -65,17 +65,36 @@ These are one problem wearing two coats: **nothing in the stack actually underst
 ## Product architecture: the loop
 
 ```mermaid
-flowchart LR
-  Kit["Kit (ConvertKit) v4"] -->|"webhooks (link_click, lifecycle)"| Ingest["Signal ingestion (fast 2xx)"]
-  Sim["Simulator (dev only)"] --> Events["events table (append-only, source-tagged)"]
+flowchart TB
+  subgraph inputs["Inputs"]
+    Kit["Kit (ConvertKit) v4"]
+    Sim["Simulator (dev only)"]
+    Newsletter["Newsletter fingerprint (OpenAI)"]
+  end
+
+  subgraph signals["Signal pipeline"]
+    Ingest["Signal ingestion (fast 2xx)"]
+    Events["Events table (append-only, source-tagged)"]
+    Recompute["Recompute job (scheduled + on demand)"]
+    Reader["Reader fingerprint (affinities, lifecycle, churn slope)"]
+  end
+
+  subgraph personalize["Personalization"]
+    Segments["Default + AI-built segments"]
+    Ghost["Ghostwriter: blocks to per-segment variants"]
+    Sends["Per-segment broadcasts (draft by default)"]
+  end
+
+  Kit -->|"webhooks (link_click, lifecycle)"| Ingest
+  Sim --> Events
   Ingest --> Events
-  Events -->|"only events matching connection.dataSource"| Recompute["Recompute job (scheduled + on demand)"]
-  Recompute --> Reader["Reader fingerprint (affinities, lifecycle, churn slope)"]
-  Reader --> Segments["Default + AI-built segments"]
-  Newsletter["Newsletter fingerprint (OpenAI)"] --> Segments
-  Newsletter --> Ghost["Ghostwriter: blocks -> per-segment variants"]
+  Events -->|"events matching connection.dataSource"| Recompute
+  Recompute --> Reader
+  Reader --> Segments
+  Newsletter --> Segments
+  Newsletter --> Ghost
   Segments --> Ghost
-  Ghost --> Sends["Per-segment broadcasts (draft by default)"]
+  Ghost --> Sends
   Segments -->|"tags + fields (LIVE_KIT only)"| Kit
   Sends -->|"POST /v4/broadcasts (LIVE_KIT only)"| Kit
 ```
