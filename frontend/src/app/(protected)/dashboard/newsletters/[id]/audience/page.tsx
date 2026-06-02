@@ -135,6 +135,12 @@ export default function AudiencePage() {
     return <p className="text-sm text-muted-foreground">Loading audience...</p>;
   }
 
+  const engagedCount = insights?.lifecycleCounts.ENGAGED ?? 0;
+  const fingerprintShare =
+    insights && insights.totalSubscribers > 0
+      ? Math.round((insights.withFingerprint / insights.totalSubscribers) * 100)
+      : 0;
+
   if (!insights || insights.totalSubscribers === 0) {
     return (
       <EmptyState
@@ -147,9 +153,21 @@ export default function AudiencePage() {
   return (
     <div className="space-y-6">
       <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Subscribers" value={insights.totalSubscribers} />
-        <StatCard label="With fingerprint" value={insights.withFingerprint} />
-        <StatCard label="Avg churn risk" value={`${(insights.averageChurn * 100).toFixed(0)}%`} />
+        <StatCard
+          label="Subscribers"
+          value={insights.totalSubscribers}
+          hint={`${insights.withFingerprint} with fingerprints`}
+        />
+        <StatCard
+          label="With fingerprint"
+          value={insights.withFingerprint}
+          hint={`${fingerprintShare}% of list`}
+        />
+        <StatCard
+          label="Avg churn risk"
+          value={`${(insights.averageChurn * 100).toFixed(0)}%`}
+          hint={`${engagedCount} engaged readers`}
+        />
         <StatCard label="At risk" value={insights.atRiskCount} hint="churn >= 60%" />
       </div>
 

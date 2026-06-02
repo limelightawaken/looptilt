@@ -45,6 +45,44 @@ export default function OverviewPage() {
   const publishedCount = sends.filter((s) => s.status === "PUBLISHED").length;
   const draftCount = sends.filter((s) => s.status === "DRAFT").length;
 
+  const overviewStats = useMemo(() => {
+    const engaged = insights?.lifecycleCounts.ENGAGED ?? 0;
+    const segmentedPlacements = segments.reduce(
+      (sum, segment) => sum + (segment._count?.memberships ?? 0),
+      0,
+    );
+    if (!insights || insights.totalSubscribers === 0) {
+      return [
+        { label: "Subscribers", value: 0, hint: "Connect Kit or seed demo data" },
+        { label: "Avg churn risk", value: "0%", hint: "Needs reader signals" },
+        { label: "At-risk readers", value: 0, hint: "churn >= 60%" },
+        { label: "Active segments", value: activeSegments, hint: `${segments.length} segments defined` },
+      ];
+    }
+    return [
+      {
+        label: "Subscribers",
+        value: insights.totalSubscribers,
+        hint: `${insights.withFingerprint} with fingerprints`,
+      },
+      {
+        label: "Avg churn risk",
+        value: `${(insights.averageChurn * 100).toFixed(0)}%`,
+        hint: `${engaged} engaged readers`,
+      },
+      {
+        label: "At-risk readers",
+        value: insights.atRiskCount,
+        hint: "churn >= 60%",
+      },
+      {
+        label: "Active segments",
+        value: activeSegments,
+        hint: `${segments.length} total · ${segmentedPlacements} placements`,
+      },
+    ];
+  }, [insights, segments, activeSegments]);
+
   const setup = useMemo(
     () => [
       {
@@ -121,15 +159,7 @@ export default function OverviewPage() {
         animate="visible"
         className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4"
       >
-        {[
-          { label: "Subscribers", value: insights?.totalSubscribers ?? 0 },
-          {
-            label: "Avg churn risk",
-            value: insights ? `${(insights.averageChurn * 100).toFixed(0)}%` : "0%",
-          },
-          { label: "At-risk readers", value: insights?.atRiskCount ?? 0, hint: "churn >= 60%" },
-          { label: "Active segments", value: activeSegments },
-        ].map((stat) => (
+        {overviewStats.map((stat) => (
           <motion.div key={stat.label} variants={fadeUp} className="h-full">
             <StatCard label={stat.label} value={stat.value} hint={stat.hint} />
           </motion.div>

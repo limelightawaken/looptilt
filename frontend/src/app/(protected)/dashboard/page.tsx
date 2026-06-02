@@ -64,13 +64,33 @@ export default function DashboardPage() {
         className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4"
       >
         {[
-          { label: "Newsletters", value: loading ? "-" : newsletters.length },
-          { label: "Archive issues", value: loading ? "-" : totalArchive },
-          { label: "Fingerprints ready", value: loading ? "-" : readyFingerprints },
-          { label: "Fingerprints pending", value: loading ? "-" : pendingFingerprints },
+          {
+            label: "Newsletters",
+            value: loading ? "-" : newsletters.length,
+            hint: loading ? undefined : `${readyFingerprints} ready to send`,
+          },
+          {
+            label: "Archive issues",
+            value: loading ? "-" : totalArchive,
+            hint: loading ? undefined : `across ${newsletters.length} workspaces`,
+          },
+          {
+            label: "Fingerprints ready",
+            value: loading ? "-" : readyFingerprints,
+            hint: loading
+              ? undefined
+              : pendingFingerprints > 0
+                ? `${pendingFingerprints} still pending`
+                : "all workspaces ready",
+          },
+          {
+            label: "Fingerprints pending",
+            value: loading ? "-" : pendingFingerprints,
+            hint: loading ? undefined : `${readyFingerprints} already ready`,
+          },
         ].map((stat) => (
           <motion.div key={stat.label} variants={fadeUp} className="h-full">
-            <StatCard label={stat.label} value={stat.value} />
+            <StatCard label={stat.label} value={stat.value} hint={stat.hint} />
           </motion.div>
         ))}
       </motion.div>

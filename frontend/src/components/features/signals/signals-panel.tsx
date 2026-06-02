@@ -41,13 +41,30 @@ export function SignalsPanel({ newsletterId }: { newsletterId: string }) {
     .sort((a, b) => (b.fingerprint?.churnPropensity ?? 0) - (a.fingerprint?.churnPropensity ?? 0))
     .slice(0, 8);
   const maxClicks = Math.max(1, ...insights.topicEngagement.map((t) => t.clicks));
+  const engagedCount = insights.lifecycleCounts.ENGAGED ?? 0;
+  const fingerprintShare =
+    insights.totalSubscribers > 0
+      ? Math.round((insights.withFingerprint / insights.totalSubscribers) * 100)
+      : 0;
 
   return (
     <div className="space-y-6">
       <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Subscribers" value={insights.totalSubscribers} />
-        <StatCard label="With fingerprint" value={insights.withFingerprint} />
-        <StatCard label="Avg churn risk" value={`${(insights.averageChurn * 100).toFixed(0)}%`} />
+        <StatCard
+          label="Subscribers"
+          value={insights.totalSubscribers}
+          hint={`${insights.withFingerprint} with fingerprints`}
+        />
+        <StatCard
+          label="With fingerprint"
+          value={insights.withFingerprint}
+          hint={`${fingerprintShare}% of list`}
+        />
+        <StatCard
+          label="Avg churn risk"
+          value={`${(insights.averageChurn * 100).toFixed(0)}%`}
+          hint={`${engagedCount} engaged readers`}
+        />
         <StatCard label="At risk" value={insights.atRiskCount} hint="churn >= 60%" />
       </div>
 
