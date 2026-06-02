@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/shared/stat-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { fadeUp, stagger } from "@/lib/motion";
+import { appShellClass } from "@/lib/layout";
 import { looptiltApi } from "@/lib/looptilt-api";
 import type { NewsletterSummary } from "@/lib/types/looptilt";
 
@@ -41,7 +42,7 @@ export default function DashboardPage() {
   ).length;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className={`${appShellClass} py-8`}>
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">

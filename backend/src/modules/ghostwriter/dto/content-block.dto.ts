@@ -1,21 +1,32 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+import { ContentBlockKind } from '@prisma/client';
+import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateContentBlockDto {
+  @ApiPropertyOptional({ enum: ContentBlockKind, default: ContentBlockKind.CONTENT })
+  @IsOptional()
+  @IsEnum(ContentBlockKind)
+  kind?: ContentBlockKind;
+
   @ApiProperty({ example: 'Lead story: the retention cliff' })
   @IsString()
   @IsNotEmpty()
   label: string;
 
-  @ApiProperty({ example: 'Hook the reader with a contrarian stat about churn' })
+  @ApiPropertyOptional({ example: 'Hook the reader with a contrarian stat about churn' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  intent: string;
+  intent?: string;
 
-  @ApiProperty({ example: 'Most creators watch open rate. The number that predicts churn is the slope...' })
+  @ApiPropertyOptional({ example: 'Most creators watch open rate. The number that predicts churn is the slope...' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  body: string;
+  body?: string;
+
+  @ApiPropertyOptional({ description: 'Link, image, or promotion URL', example: 'https://example.com/post' })
+  @IsOptional()
+  @IsString()
+  url?: string;
 
   @ApiPropertyOptional({ description: 'Associated topic id (for affinity-aware ordering)' })
   @IsOptional()
@@ -30,6 +41,11 @@ export class CreateContentBlockDto {
 }
 
 export class UpdateContentBlockDto {
+  @ApiPropertyOptional({ enum: ContentBlockKind })
+  @IsOptional()
+  @IsEnum(ContentBlockKind)
+  kind?: ContentBlockKind;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
@@ -44,6 +60,11 @@ export class UpdateContentBlockDto {
   @IsOptional()
   @IsString()
   body?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  url?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

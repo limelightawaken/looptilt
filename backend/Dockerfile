@@ -16,8 +16,8 @@ RUN npx prisma generate
 # Copy source code
 COPY . .
 
-# Build the application
-RUN npm run build
+# Build the application (production env enforces SMTP for email verification)
+RUN NODE_ENV=production npm run build
 
 # Production stage
 FROM node:20-alpine AS production

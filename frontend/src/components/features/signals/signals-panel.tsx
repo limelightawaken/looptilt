@@ -31,7 +31,7 @@ export function SignalsPanel({ newsletterId }: { newsletterId: string }) {
     return (
       <EmptyState
         title="No signal yet"
-        description="Connect a data source, seed/generate signals (demo) or wait for Kit webhooks, then run the loop."
+        description="Connect a data source, use Seed demo data on the Connection tab, or wait for Kit webhooks."
       />
     );
   }

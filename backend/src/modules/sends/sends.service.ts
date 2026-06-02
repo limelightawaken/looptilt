@@ -31,7 +31,10 @@ export class SendsService {
     return this.database.send.findMany({
       where: { newsletterId },
       orderBy: { createdAt: 'desc' },
-      include: { variants: { include: { segment: true } } },
+      include: {
+        variants: { include: { segment: true } },
+        blocks: { orderBy: [{ order: 'asc' }, { createdAt: 'asc' }] },
+      },
     });
   }
 
@@ -39,7 +42,10 @@ export class SendsService {
     await this.verifyOwnership(userId, newsletterId);
     const send = await this.database.send.findFirst({
       where: { id: sendId, newsletterId },
-      include: { variants: { include: { segment: true } } },
+      include: {
+        variants: { include: { segment: true } },
+        blocks: { orderBy: [{ order: 'asc' }, { createdAt: 'asc' }] },
+      },
     });
     if (!send) {
       throw new NotFoundException(`Send ${sendId} not found`);
@@ -49,13 +55,25 @@ export class SendsService {
 
   async create(userId: string, newsletterId: string, dto: CreateSendDto) {
     await this.verifyOwnership(userId, newsletterId);
+    const send = await this.database.send.create({
+      data: { newsletterId, title: dto.title, status: 'DRAFT' },
+    });
+    return this.get(userId, newsletterId, send.id);
+  }
+
+  async generate(userId: string, newsletterId: string, sendId: string) {
+    await this.verifyOwnership(userId, newsletterId);
+    const existing = await this.database.send.findFirst({ where: { id: sendId, newsletterId } });
+    if (!existing) {
+      throw new NotFoundException(`Send ${sendId} not found`);
+    }
     const fingerprint = await this.requireReadyFingerprint(newsletterId);
     const blocks = await this.database.contentBlock.findMany({
-      where: { newsletterId },
+      where: { sendId },
       orderBy: { order: 'asc' },
     });
     if (blocks.length === 0) {
-      throw new BadRequestException('Add at least one content block before composing a send');
+      throw new BadRequestException('Add at least one content block to this issue before generating');
     }
     const segments = await this.segmentsWithMembers(newsletterId);
     if (segments.length === 0) {
@@ -68,9 +86,9 @@ export class SendsService {
       where: { id: newsletterId },
       select: { name: true },
     });
-    const send = await this.database.send.create({
-      data: { newsletterId, title: dto.title, status: 'GENERATING' },
-    });
+    await this.database.send.update({ where: { id: sendId }, data: { status: 'GENERATING' } });
+    // Clear any prior variants so re-generating after editing blocks is idempotent.
+    await this.database.segmentVariant.deleteMany({ where: { sendId } });
     for (const segment of segments) {
       const profile = await this.computeSegmentProfile(segment.id);
       const content = await this.assemblyService.assembleForSegment({
@@ -83,11 +101,11 @@ export class SendsService {
         profile,
       });
       await this.database.segmentVariant.create({
-        data: { sendId: send.id, segmentId: segment.id, content, status: 'GENERATED' },
+        data: { sendId, segmentId: segment.id, content, status: 'GENERATED' },
       });
     }
-    await this.database.send.update({ where: { id: send.id }, data: { status: 'READY' } });
-    return this.get(userId, newsletterId, send.id);
+    await this.database.send.update({ where: { id: sendId }, data: { status: 'READY' } });
+    return this.get(userId, newsletterId, sendId);
   }
 
   async pushToKit(userId: string, newsletterId: string, sendId: string) {

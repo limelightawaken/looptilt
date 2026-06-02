@@ -100,7 +100,7 @@ That one thing is the **newsletter fingerprint**: a structured profile (topics, 
 
 | Feature | Role | Status |
 |---------|------|--------|
-| **Ghostwriter** | Learns the voice from the archive; assembles per-segment variants from a modular block menu | Implemented |
+| **Ghostwriter** | Learns the voice from the archive; assembles per-segment variants from an issue's content blocks | Implemented |
 | **Re-segmentation loop** | Reads Kit signals, computes the reader fingerprint, sorts readers into segments, and reshapes the next send per segment | Implemented |
 
 This repository is the **full system, end to end**: archive ingestion → fingerprint (OpenAI-compatible) → Kit signal capture (or a local simulator) → reader fingerprints + churn detection → default and AI-built segments → per-segment voice-preserving sends → Kit draft broadcasts.
@@ -156,7 +156,7 @@ flowchart TB
   Sends -->|"POST /v4/broadcasts (LIVE_KIT only)"| Kit
 ```
 
-**Why this is one product, not two.** Re-segmentation makes the email engaging but creates demand the creator cannot meet alone (a variant per segment). The ghostwriter makes that demand affordable: the creator writes a menu of blocks once, and the engine assembles/orders them per segment in the creator's own voice. The loop *creates* the personalization demand; the ghostwriter *satisfies* it — both drawing on the same fingerprint.
+**Why this is one product, not two.** Re-segmentation makes the email engaging but creates demand the creator cannot meet alone (a variant per segment). The ghostwriter makes that demand affordable: the creator adds an issue's content blocks once, and the engine assembles/orders them per segment in the creator's own voice. The loop *creates* the personalization demand; the ghostwriter *satisfies* it — both drawing on the same fingerprint.
 
 ---
 
@@ -174,12 +174,12 @@ flowchart TB
 | `reader-fingerprints` | Per-subscriber matrix, lifecycle staging, **churn detector (slope, not level)**, insights |
 | `segments` | Zero-setup default segments + AI custom-segment builder; Kit tag write-back |
 | `loop` | Recompute orchestration (reader fingerprints + segment reassignment), hourly scheduler + manual trigger |
-| `ghostwriter` | Content block menu + per-segment voice-preserving assembly |
+| `ghostwriter` | Per-issue content blocks (copy, links, images, promotions, instructions) + per-segment voice-preserving assembly |
 | `sends` | Generate one variant per segment; push to Kit as **draft** broadcasts (Live mode only) |
 
 ### Frontend (Next.js)
 
-A restrained, editorial dashboard (shadcn-style primitives + Framer Motion) with a per-newsletter workspace: **Connection** (Live Kit vs Demo data + simulator controls), **Archive**, **Fingerprint**, **Signals** (lifecycle mix, topic engagement, churn-risk readers), **Segments** (defaults + AI builder with rule/rationale/match-count), **Blocks** (the menu), and **Send** (per-segment variants, push to Kit). A persistent **mode badge** shows Live (Kit) vs Demo data everywhere.
+A restrained, editorial dashboard (shadcn-style primitives + Framer Motion) with a per-newsletter workspace: **Connection** (Live Kit vs Demo data + simulator controls), **Archive**, **Fingerprint**, **Signals** (lifecycle mix, topic engagement, churn-risk readers), **Segments** (defaults + AI builder with rule/rationale/match-count), and **Send** (create an issue, add its content blocks — copy, links, images, promotions, instructions — then generate per-segment variants and push to Kit). A persistent **mode badge** shows Live (Kit) vs Demo data everywhere.
 
 ---
 
@@ -190,11 +190,10 @@ The full loop runs locally without a Kit account using **Demo data** mode.
 1. **Sign up**, then create a newsletter (e.g. "The Growth Brief").
 2. **Archive tab** — paste 2–3 past issues.
 3. **Fingerprint tab** — Generate. Review topics, voice, audience, depth (shows whether OpenAI or heuristic produced it).
-4. **Connection tab** — choose **Use demo data**. Then: **Seed 60 subscribers** → **Generate 10 issues of signals** → **Run the loop**.
+4. **Connection tab** — choose **Use demo data**, then click **Seed demo data** (archive, fingerprint, subscribers, signals, and loop in one step).
 5. **Signals tab** — see the lifecycle mix, topic engagement, and the highest churn-risk readers (the simulator deliberately includes declining readers so the churn-slope detector lights up).
 6. **Segments tab** — defaults appear automatically. Try the AI builder: type "readers who cooled off and lean technical" → Preview → see the rule, rationale, and live match count → Save.
-7. **Blocks tab** — add a few content blocks.
-8. **Send tab** — Compose. The ghostwriter generates one voice-preserving variant per segment. (In Live mode, "Push to Kit" creates draft broadcasts per segment tag.)
+7. **Send tab** — create an issue, then add its content blocks (copy, links, images, promotions, or author instructions). Click **Generate variants** and the ghostwriter produces one voice-preserving variant per segment. (In Live mode, "Push to Kit" creates draft broadcasts per segment tag.)
 
 To use **Live (Kit)** instead: Connection tab → paste a Kit v4 API key → Connect. Webhooks register automatically and signals flow from Kit.
 
@@ -304,7 +303,7 @@ Base URL `http://localhost:3001/api` · Swagger at `/api/docs` · session-cookie
 
 ### ESP connection & simulator
 - `GET /newsletters/:id/esp`, `POST /newsletters/:id/esp/connect`, `DELETE /newsletters/:id/esp`
-- `POST /newsletters/:id/simulator/seed`, `POST /newsletters/:id/simulator/generate` *(dev only)*
+- `POST /newsletters/:id/simulator/seed` *(dev only — full demo state in one call)*
 
 ### Signals (inbound)
 - `POST /webhooks/kit/:newsletterId?event=<name>` — Kit webhook receiver

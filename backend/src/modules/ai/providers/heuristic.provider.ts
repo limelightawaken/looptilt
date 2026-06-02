@@ -159,11 +159,26 @@ export class HeuristicProvider implements AiProvider {
   }
 
   async assembleVariant(input: VariantAssemblyInput): Promise<string> {
-    const leadBlocks = this.orderBlocks(input);
-    const sections = leadBlocks
-      .map((block, index) => `## ${index + 1}. ${block.label}\n\n${block.body}`)
+    const orderedBlocks = this.orderBlocks(input);
+    const material = orderedBlocks.filter((block) => block.kind !== 'INSTRUCTION');
+    const instructions = orderedBlocks.filter((block) => block.kind === 'INSTRUCTION');
+    const sections = material
+      .map((block, index) => `## ${index + 1}. ${block.label}\n\n${this.renderBlock(block)}`)
       .join('\n\n');
-    return `# ${input.newsletterName} - ${input.segmentName} edition\n\n> Tuned for: ${input.segmentDescription}. Depth: ${input.depthPreference}. Leading topics: ${input.topAffinities.join(', ') || 'general'}.\n\n${sections}\n\n---\n\n*Assembled by LoopTilt (heuristic). Voice: ${input.voice.tone}, ${input.voice.formality}.*`;
+    const note = instructions.length
+      ? `\n\n> Author instructions applied: ${instructions.map((b) => b.label).join('; ')}.`
+      : '';
+    return `# ${input.newsletterName} - ${input.segmentName} edition\n\n> Tuned for: ${input.segmentDescription}. Depth: ${input.depthPreference}. Leading topics: ${input.topAffinities.join(', ') || 'general'}.${note}\n\n${sections}\n\n---\n\n*Assembled by LoopTilt (heuristic). Voice: ${input.voice.tone}, ${input.voice.formality}.*`;
+  }
+
+  private renderBlock(block: VariantAssemblyInput['blocks'][number]): string {
+    if (block.kind === 'IMAGE' && block.url) {
+      return `![${block.label}](${block.url})${block.body ? `\n\n${block.body}` : ''}`;
+    }
+    if ((block.kind === 'LINK' || block.kind === 'PROMOTION') && block.url) {
+      return `${block.body ? `${block.body}\n\n` : ''}[${block.label}](${block.url})`;
+    }
+    return block.body ?? (block.url ? `[${block.label}](${block.url})` : block.label);
   }
 
   private orderBlocks(input: VariantAssemblyInput): VariantAssemblyInput['blocks'] {

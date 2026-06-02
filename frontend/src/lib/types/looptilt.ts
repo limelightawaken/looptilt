@@ -97,12 +97,16 @@ export interface GhostwriterDraft {
   updatedAt: string;
 }
 
+export type ContentBlockKind = "CONTENT" | "LINK" | "IMAGE" | "PROMOTION" | "INSTRUCTION";
+
 export interface ContentBlock {
   id: string;
-  newsletterId: string;
+  sendId: string;
+  kind: ContentBlockKind;
   label: string;
-  intent: string;
-  body: string;
+  intent: string | null;
+  body: string | null;
+  url: string | null;
   topicId: string | null;
   order: number;
 }
@@ -195,6 +199,7 @@ export interface Send {
   status: SendStatus;
   createdAt: string;
   variants: SegmentVariant[];
+  blocks: ContentBlock[];
 }
 
 export interface EspStatus {

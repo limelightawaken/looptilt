@@ -18,15 +18,25 @@ export class SendsController {
   }
 
   @Post()
-  @ApiOperation({
-    summary: 'Compose a send: generate one voice-preserving variant per segment',
-  })
+  @ApiOperation({ summary: 'Create a draft issue (add content blocks, then generate)' })
   create(
     @Session() session: UserSession,
     @Param('newsletterId') newsletterId: string,
     @Body() dto: CreateSendDto,
   ) {
     return this.sendsService.create(session.user.id, newsletterId, dto);
+  }
+
+  @Post(':sendId/generate')
+  @ApiOperation({
+    summary: "Generate one voice-preserving variant per segment from the issue's blocks",
+  })
+  generate(
+    @Session() session: UserSession,
+    @Param('newsletterId') newsletterId: string,
+    @Param('sendId') sendId: string,
+  ) {
+    return this.sendsService.generate(session.user.id, newsletterId, sendId);
   }
 
   @Get(':sendId')

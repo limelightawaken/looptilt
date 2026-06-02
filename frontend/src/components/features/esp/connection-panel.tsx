@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ModeBadge } from "@/components/shared/mode-badge";
 import { looptiltApi } from "@/lib/looptilt-api";
 import type { EspStatus } from "@/lib/types/looptilt";
@@ -16,7 +14,6 @@ interface ConnectionPanelProps {
 
 export function ConnectionPanel({ newsletterId, onChange }: ConnectionPanelProps) {
   const [status, setStatus] = useState<EspStatus | null>(null);
-  const [apiKey, setApiKey] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -26,6 +23,38 @@ export function ConnectionPanel({ newsletterId, onChange }: ConnectionPanelProps
   useEffect(() => {
     refresh();
   }, [newsletterId]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const esp = params.get("esp");
+    if (esp === "connected") {
+      setNote("Kit account connected via OAuth — webhooks registered.");
+    } else if (esp === "error") {
+      setError("Kit connection failed or was cancelled. Please try again.");
+    }
+    if (esp) {
+      params.delete("esp");
+      const query = params.toString();
+      window.history.replaceState(
+        {},
+        "",
+        `${window.location.pathname}${query ? `?${query}` : ""}`
+      );
+    }
+  }, []);
+
+  const connectKitOAuth = async () => {
+    setBusy("live");
+    setError(null);
+    setNote(null);
+    try {
+      const { url } = await looptiltApi.getKitOAuthUrl(newsletterId);
+      window.location.href = url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not start Kit OAuth");
+      setBusy(null);
+    }
+  };
 
   const run = async (key: string, fn: () => Promise<unknown>, success?: string) => {
     setBusy(key);
@@ -68,27 +97,12 @@ export function ConnectionPanel({ newsletterId, onChange }: ConnectionPanelProps
             <div className="rounded-lg border border-border p-4">
               <p className="text-sm font-medium">Live (Kit)</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Connect a real Kit v4 API key. Registers webhooks and writes tags back to Kit.
+                Connect your Kit account securely with OAuth. You&apos;ll grant access on Kit and be
+                returned here. Registers webhooks and writes tags back to Kit.
               </p>
-              <div className="mt-3 space-y-2">
-                <Label htmlFor="kit-key">Kit API key</Label>
-                <Input
-                  id="kit-key"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="kit_v4_..."
-                  type="password"
-                />
-                <Button
-                  className="w-full"
-                  disabled={busy !== null || !apiKey.trim()}
-                  onClick={() =>
-                    run("live", () =>
-                      looptiltApi.connectEsp(newsletterId, { dataSource: "LIVE_KIT", apiKey })
-                    )
-                  }
-                >
-                  {busy === "live" ? "Connecting..." : "Connect Kit"}
+              <div className="mt-3">
+                <Button className="w-full" disabled={busy !== null} onClick={connectKitOAuth}>
+                  {busy === "live" ? "Redirecting to Kit..." : "Connect with Kit"}
                 </Button>
               </div>
             </div>
@@ -131,36 +145,31 @@ export function ConnectionPanel({ newsletterId, onChange }: ConnectionPanelProps
           <CardHeader>
             <CardTitle>Demo signal simulator</CardTitle>
             <CardDescription>
-              Seed subscribers and generate a realistic stream (opens, topic-encoded clicks, explicit
-              signals), then run the loop. Generate a fingerprint first so topics exist.
+              One click seeds demo archive, fingerprint topics, 60 subscribers, 10 issues of signals,
+              and runs the full re-segmentation loop.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
             <Button
-              variant="subtle"
               disabled={busy !== null}
               onClick={() =>
-                run("seed", () => looptiltApi.seedSimulator(newsletterId, 60), "Seeded 60 demo subscribers")
+                run(
+                  "seed",
+                  () => looptiltApi.seedSimulator(newsletterId),
+                  "Demo data ready — check Signals and Segments tabs"
+                )
               }
             >
-              {busy === "seed" ? "Seeding..." : "Seed 60 subscribers"}
+              {busy === "seed" ? "Seeding..." : "Seed demo data"}
             </Button>
             <Button
               variant="subtle"
-              disabled={busy !== null}
-              onClick={() =>
-                run("signals", () => looptiltApi.generateSignals(newsletterId, 10), "Generated 10 issues of signals")
-              }
-            >
-              {busy === "signals" ? "Generating..." : "Generate 10 issues of signals"}
-            </Button>
-            <Button
               disabled={busy !== null}
               onClick={() =>
                 run("recompute", () => looptiltApi.recompute(newsletterId), "Loop recomputed")
               }
             >
-              {busy === "recompute" ? "Running..." : "Run the loop"}
+              {busy === "recompute" ? "Running..." : "Re-run the loop"}
             </Button>
           </CardContent>
         </Card>

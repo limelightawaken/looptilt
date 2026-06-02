@@ -86,10 +86,14 @@ export interface SegmentProposalInput {
   acquisitionChannels: string[];
 }
 
+export type AssemblyBlockKind = 'CONTENT' | 'LINK' | 'IMAGE' | 'PROMOTION' | 'INSTRUCTION';
+
 export interface AssemblyBlock {
+  kind: AssemblyBlockKind;
   label: string;
-  intent: string;
-  body: string;
+  intent?: string;
+  body?: string;
+  url?: string;
   topicName?: string;
 }
 

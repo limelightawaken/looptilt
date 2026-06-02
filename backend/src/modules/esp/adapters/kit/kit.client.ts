@@ -9,20 +9,78 @@ import {
 
 const MAX_RETRIES = 3;
 const RETRY_BASE_MS = 500;
+/** Refresh the access token this many ms before it actually expires. */
+const TOKEN_EXPIRY_BUFFER_MS = 60_000;
+
+export interface KitOAuthTokens {
+  accessToken: string;
+  refreshToken: string | null;
+  expiresAt: Date | null;
+  scope: string | null;
+}
+
+/** Persists newly refreshed OAuth tokens so the next request reuses them. */
+export type KitTokenPersister = (tokens: KitOAuthTokens) => Promise<void>;
+
+interface KitApiKeyAuth {
+  kind: 'apiKey';
+  apiKey: string;
+}
+
+interface KitOAuthAuth {
+  kind: 'oauth';
+  accessToken: string;
+  refreshToken: string | null;
+  expiresAt: Date | null;
+  clientId: string;
+  clientSecret: string;
+  tokenUrl: string;
+  onTokensRefreshed: KitTokenPersister;
+}
+
+export type KitAuth = KitApiKeyAuth | KitOAuthAuth;
+
+export interface KitClientOptions {
+  baseUrl: string;
+  auth: KitAuth;
+}
 
 /**
- * Kit (ConvertKit) v4 adapter. Authenticates with X-Kit-Api-Key, applies
- * exponential backoff on 429s (Kit allows 120 req / 60s), and exposes only the
- * operations the loop needs. See kit-api-integration.md for verified shapes.
+ * Kit (ConvertKit) v4 adapter. Authenticates with either an X-Kit-Api-Key header
+ * or an OAuth 2.0 bearer token (refreshing it transparently), applies exponential
+ * backoff on 429s (Kit allows 120 req / 60s), and exposes only the operations the
+ * loop needs. See kit-api-integration.md for verified shapes.
  */
 export class KitClient implements EspAdapter {
   readonly provider = 'KIT' as const;
   private readonly logger = new Logger(KitClient.name);
+  private readonly baseUrl: string;
+  private readonly auth: KitAuth;
 
-  constructor(
-    private readonly apiKey: string,
-    private readonly baseUrl: string,
-  ) {}
+  constructor(options: KitClientOptions) {
+    this.baseUrl = options.baseUrl;
+    this.auth = options.auth;
+  }
+
+  /**
+   * Exchanges an authorization code for access + refresh tokens (confidential
+   * client; client secret kept server-side).
+   */
+  static async exchangeAuthorizationCode(params: {
+    tokenUrl: string;
+    clientId: string;
+    clientSecret: string;
+    code: string;
+    redirectUri: string;
+  }): Promise<KitOAuthTokens> {
+    return KitClient.requestTokens(params.tokenUrl, {
+      client_id: params.clientId,
+      client_secret: params.clientSecret,
+      grant_type: 'authorization_code',
+      code: params.code,
+      redirect_uri: params.redirectUri,
+    });
+  }
 
   async verifyConnection(): Promise<{ accountId: string }> {
     const data = await this.request<{ account?: { id?: number | string } }>('GET', '/account');
@@ -111,15 +169,19 @@ export class KitClient implements EspAdapter {
     body?: Record<string, unknown>,
   ): Promise<T> {
     let attempt = 0;
+    let refreshed = false;
     for (;;) {
+      const headers = await this.authHeaders();
       const response = await fetch(`${this.baseUrl}${path}`, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Kit-Api-Key': this.apiKey,
-        },
+        headers,
         body: body ? JSON.stringify(body) : undefined,
       });
+      if (response.status === 401 && this.auth.kind === 'oauth' && this.auth.refreshToken && !refreshed) {
+        refreshed = true;
+        await this.refreshAccessToken();
+        continue;
+      }
       if (response.status === 429 && attempt < MAX_RETRIES) {
         const wait = RETRY_BASE_MS * 2 ** attempt;
         attempt += 1;
@@ -134,6 +196,81 @@ export class KitClient implements EspAdapter {
       const text = await response.text();
       return (text ? JSON.parse(text) : {}) as T;
     }
+  }
+
+  private async authHeaders(): Promise<Record<string, string>> {
+    const base = { 'Content-Type': 'application/json', Accept: 'application/json' };
+    if (this.auth.kind === 'apiKey') {
+      return { ...base, 'X-Kit-Api-Key': this.auth.apiKey };
+    }
+    await this.ensureFreshToken();
+    return { ...base, Authorization: `Bearer ${this.auth.accessToken}` };
+  }
+
+  /** Proactively refresh when the token is expired (or about to expire). */
+  private async ensureFreshToken(): Promise<void> {
+    if (this.auth.kind !== 'oauth' || !this.auth.refreshToken || !this.auth.expiresAt) {
+      return;
+    }
+    if (this.auth.expiresAt.getTime() - TOKEN_EXPIRY_BUFFER_MS <= Date.now()) {
+      await this.refreshAccessToken();
+    }
+  }
+
+  private async refreshAccessToken(): Promise<void> {
+    if (this.auth.kind !== 'oauth' || !this.auth.refreshToken) {
+      throw new BadGatewayException('Kit OAuth token expired and no refresh token is available');
+    }
+    const tokens = await KitClient.requestTokens(this.auth.tokenUrl, {
+      client_id: this.auth.clientId,
+      client_secret: this.auth.clientSecret,
+      grant_type: 'refresh_token',
+      refresh_token: this.auth.refreshToken,
+    });
+    this.auth.accessToken = tokens.accessToken;
+    this.auth.refreshToken = tokens.refreshToken ?? this.auth.refreshToken;
+    this.auth.expiresAt = tokens.expiresAt;
+    await this.auth.onTokensRefreshed({
+      accessToken: this.auth.accessToken,
+      refreshToken: this.auth.refreshToken,
+      expiresAt: this.auth.expiresAt,
+      scope: tokens.scope,
+    });
+  }
+
+  private static async requestTokens(
+    tokenUrl: string,
+    body: Record<string, string>,
+  ): Promise<KitOAuthTokens> {
+    const response = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const text = await response.text();
+    if (!response.ok) {
+      throw new BadGatewayException(`Kit OAuth token request failed (${response.status}): ${text}`);
+    }
+    const data = (text ? JSON.parse(text) : {}) as {
+      access_token?: string;
+      refresh_token?: string;
+      expires_in?: number;
+      created_at?: number;
+      scope?: string;
+    };
+    if (!data.access_token) {
+      throw new BadGatewayException('Kit OAuth token response did not include an access token');
+    }
+    const baseMs =
+      typeof data.created_at === 'number' ? data.created_at * 1000 : Date.now();
+    const expiresAt =
+      typeof data.expires_in === 'number' ? new Date(baseMs + data.expires_in * 1000) : null;
+    return {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token ?? null,
+      expiresAt,
+      scope: data.scope ?? null,
+    };
   }
 
   private delay(ms: number): Promise<void> {

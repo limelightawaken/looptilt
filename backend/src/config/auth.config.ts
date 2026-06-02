@@ -1,12 +1,14 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { PrismaClient } from '@prisma/client';
+import { sendSmtpMail } from '../common/email/smtp.transport';
 
 const prisma = new PrismaClient();
 
 const isProduction = process.env.NODE_ENV === 'production';
-const requireEmailVerification =
-  process.env.REQUIRE_EMAIL_VERIFICATION === 'true' || isProduction;
+/** Off in development by default; always on in production. Set REQUIRE_EMAIL_VERIFICATION=true to test locally. */
+export const requireEmailVerification =
+  isProduction || process.env.REQUIRE_EMAIL_VERIFICATION === 'true';
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -15,7 +17,30 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification,
+    autoSignIn: !requireEmailVerification,
   },
+  ...(requireEmailVerification
+    ? {
+        emailVerification: {
+          sendOnSignUp: true,
+          sendOnSignIn: true,
+          autoSignInAfterVerification: true,
+          sendVerificationEmail: async ({ user, url }) => {
+            await sendSmtpMail({
+              to: user.email,
+              subject: 'Verify your LoopTilt email',
+              html: `
+                <h1>Verify your email</h1>
+                <p>Hi${user.name ? ` ${user.name}` : ''},</p>
+                <p>Click the link below to verify your email address:</p>
+                <p><a href="${url}">${url}</a></p>
+                <p>If you did not create an account, you can ignore this email.</p>
+              `,
+            });
+          },
+        },
+      }
+    : {}),
   user: {
     additionalFields: {
       role: {

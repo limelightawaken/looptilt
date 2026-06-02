@@ -30,6 +30,16 @@ export class EspController {
     return this.connectionService.connect(session.user.id, newsletterId, dto);
   }
 
+  @Get('oauth/url')
+  @ApiOperation({
+    summary: 'Get the Kit OAuth authorization URL',
+    description: 'Returns the URL to redirect the creator to for granting Kit account access.',
+  })
+  @ApiParam({ name: 'newsletterId', description: 'Newsletter ID' })
+  getKitOAuthUrl(@Session() session: UserSession, @Param('newsletterId') newsletterId: string) {
+    return this.connectionService.buildKitAuthorizeUrl(session.user.id, newsletterId);
+  }
+
   @Delete()
   @ApiOperation({ summary: 'Disconnect the ESP connection' })
   disconnect(@Session() session: UserSession, @Param('newsletterId') newsletterId: string) {

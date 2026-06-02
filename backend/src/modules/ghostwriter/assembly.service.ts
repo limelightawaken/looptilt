@@ -35,11 +35,16 @@ export class AssemblyService {
       // Encode topic + read-depth position into every link so inbound Kit
       // link_click webhooks map back to a fingerprint topic (kit-api §3).
       const position = index < Math.ceil(blockCount / 2) ? 'upper' : 'lower';
-      const body = topicSlug ? this.encodeLinks(block.body, topicSlug, position) : block.body;
+      const body =
+        topicSlug && block.body ? this.encodeLinks(block.body, topicSlug, position) : block.body ?? undefined;
+      const url =
+        topicSlug && block.url ? encodeTopicLink(block.url, topicSlug, position) : block.url ?? undefined;
       return {
+        kind: block.kind,
         label: block.label,
-        intent: block.intent,
+        intent: block.intent ?? undefined,
         body,
+        url,
         topicName: block.topicId ? input.topicNameById.get(block.topicId) : undefined,
       };
     });

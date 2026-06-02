@@ -111,10 +111,26 @@ export class OpenAiProvider implements AiProvider {
   }
 
   async assembleVariant(input: VariantAssemblyInput): Promise<string> {
-    const blocks = input.blocks
-      .map((b) => `- [${b.label}${b.topicName ? ` | topic: ${b.topicName}` : ''}] intent: ${b.intent}\n${b.body}`)
+    const instructions = input.blocks
+      .filter((b) => b.kind === 'INSTRUCTION')
+      .map((b) => `- ${b.label}${b.body ? `: ${b.body}` : ''}`)
+      .join('\n');
+    const material = input.blocks
+      .filter((b) => b.kind !== 'INSTRUCTION')
+      .map((b) => {
+        const meta = [b.kind.toLowerCase(), b.topicName ? `topic: ${b.topicName}` : null, b.intent ? `intent: ${b.intent}` : null]
+          .filter(Boolean)
+          .join(' | ');
+        const parts = [`- [${b.label}${meta ? ` | ${meta}` : ''}]`];
+        if (b.body) parts.push(b.body);
+        if (b.url) parts.push(`URL: ${b.url}`);
+        return parts.join('\n');
+      })
       .join('\n\n');
-    const prompt = `You are the ghostwriter for "${input.newsletterName}". Write the next issue for the segment "${input.segmentName}" (${input.segmentDescription}). This segment leans toward topics: ${input.topAffinities.join(', ') || 'general'} and prefers ${input.depthPreference} depth.\n\nPreserve the newsletter's voice exactly: tone=${input.voice.tone}, formality=${input.voice.formality}, rhythm=${input.voice.sentenceRhythm}, humor=${input.voice.humor}. Use signature phrasing like: ${input.voice.signaturePhrases.join('; ')}.\n\nSelect, order, and lightly adapt these modular blocks for this segment. Lead with what matches their affinities; cut or shorten what does not. Do not invent facts beyond the blocks. Return the issue as markdown.\n\nBlocks:\n${blocks}`;
+    const instructionSection = instructions
+      ? `\n\nFollow these author instructions (apply them, do not print them verbatim):\n${instructions}`
+      : '';
+    const prompt = `You are the ghostwriter for "${input.newsletterName}". Write the next issue for the segment "${input.segmentName}" (${input.segmentDescription}). This segment leans toward topics: ${input.topAffinities.join(', ') || 'general'} and prefers ${input.depthPreference} depth.\n\nPreserve the newsletter's voice exactly: tone=${input.voice.tone}, formality=${input.voice.formality}, rhythm=${input.voice.sentenceRhythm}, humor=${input.voice.humor}. Use signature phrasing like: ${input.voice.signaturePhrases.join('; ')}.\n\nSelect, order, and lightly adapt the material below for this segment. Lead with what matches their affinities; cut or shorten what does not. Include any links, images, and promotions using their exact URLs (images as markdown image embeds). Do not invent facts or URLs beyond what is provided. Return the issue as markdown.${instructionSection}\n\nMaterial:\n${material}`;
     try {
       const response = await this.client.chat.completions.create({
         model: this.model,

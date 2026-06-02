@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { fadeUp, stagger } from "@/lib/motion";
+import { appShellClass } from "@/lib/layout";
 import { looptiltApi } from "@/lib/looptilt-api";
 import type { NewsletterSummary } from "@/lib/types/looptilt";
 
@@ -56,7 +57,7 @@ export default function NewslettersPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className={`${appShellClass} py-8`}>
       <div className="mb-8">
         <h1 className="text-3xl font-semibold tracking-tight">Newsletters</h1>
         <p className="mt-1.5 text-muted-foreground">

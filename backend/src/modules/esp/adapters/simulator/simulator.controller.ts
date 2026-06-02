@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { Session, UserSession } from '@thallesp/nestjs-better-auth';
 import { SimulatorGuard } from './simulator.guard';
 import { SimulatorService } from './simulator.service';
-import { GenerateSignalsDto, SeedSubscribersDto } from './dto/simulate.dto';
+import { SeedDemoDto } from './dto/simulate.dto';
 
 @ApiTags('simulator')
 @ApiBearerAuth()
@@ -13,23 +13,21 @@ export class SimulatorController {
   constructor(private readonly simulatorService: SimulatorService) {}
 
   @Post('seed')
-  @ApiOperation({ summary: '[dev only] Seed demo subscribers (SIMULATOR mode)' })
+  @ApiOperation({
+    summary:
+      '[dev only] Seed full demo state (archive, fingerprint topics, subscribers, signals, loop recompute)',
+  })
   @ApiParam({ name: 'newsletterId', description: 'Newsletter ID' })
   seed(
     @Session() session: UserSession,
     @Param('newsletterId') newsletterId: string,
-    @Body() dto: SeedSubscribersDto,
+    @Body() dto: SeedDemoDto,
   ) {
-    return this.simulatorService.seed(session.user.id, newsletterId, dto.subscriberCount ?? 60);
-  }
-
-  @Post('generate')
-  @ApiOperation({ summary: '[dev only] Generate a realistic signal stream (SIMULATOR mode)' })
-  generate(
-    @Session() session: UserSession,
-    @Param('newsletterId') newsletterId: string,
-    @Body() dto: GenerateSignalsDto,
-  ) {
-    return this.simulatorService.generateSignals(session.user.id, newsletterId, dto.issues ?? 10);
+    return this.simulatorService.seed(
+      session.user.id,
+      newsletterId,
+      dto.subscriberCount ?? 60,
+      dto.issues ?? 10,
+    );
   }
 }

@@ -105,7 +105,6 @@ model Newsletter {
   subscribers Subscriber[]
   signals     SignalEvent[]
   segments    Segment[]
-  blocks      ContentBlock[]
   sends       Send[]
 
   @@index([userId])
@@ -315,19 +314,29 @@ model SegmentMembership {
   @@map("segment_memberships")
 }
 
-model ContentBlock {
-  id           String     @id @default(cuid())
-  newsletterId String
-  label        String
-  intent       String
-  body         String     @db.Text
-  topicId      String?
-  order        Int        @default(0)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  newsletter   Newsletter @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+enum ContentBlockKind {
+  CONTENT
+  LINK
+  IMAGE
+  PROMOTION
+  INSTRUCTION
+}
 
-  @@index([newsletterId])
+model ContentBlock {
+  id        String           @id @default(cuid())
+  sendId    String
+  kind      ContentBlockKind @default(CONTENT)
+  label     String
+  intent    String?
+  body      String?          @db.Text
+  url       String?
+  topicId   String?
+  order     Int              @default(0)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  send      Send             @relation(fields: [sendId], references: [id], onDelete: Cascade)
+
+  @@index([sendId])
   @@map("content_blocks")
 }
 
@@ -349,6 +358,7 @@ model Send {
   updatedAt    DateTime         @updatedAt
   newsletter   Newsletter       @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
   variants     SegmentVariant[]
+  blocks       ContentBlock[]
 
   @@index([newsletterId])
   @@map("sends")
@@ -400,20 +410,42 @@ model GhostwriterDraft {
   @@map("ghostwriter_drafts")
 }
 
+enum EspAuthMethod {
+  API_KEY
+  OAUTH
+}
+
 model EspConnection {
-  id                String      @id @default(cuid())
-  newsletterId      String      @unique
-  provider          EspProvider
-  dataSource        DataSource  @default(SIMULATOR)
-  isActive          Boolean     @default(false)
-  apiKeyEncrypted   String?
-  kitAccountId      String?
-  webhookIds        Json?
-  customFieldKeyMap Json?
-  lastSyncedAt      DateTime?
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-  newsletter        Newsletter  @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+  id                    String        @id @default(cuid())
+  newsletterId          String        @unique
+  provider              EspProvider
+  dataSource            DataSource    @default(SIMULATOR)
+  authMethod            EspAuthMethod @default(API_KEY)
+  isActive              Boolean       @default(false)
+  apiKeyEncrypted       String?
+  oauthAccessTokenEncrypted  String?
+  oauthRefreshTokenEncrypted String?
+  oauthTokenExpiresAt   DateTime?
+  oauthScope            String?
+  kitAccountId          String?
+  webhookIds            Json?
+  customFieldKeyMap     Json?
+  lastSyncedAt          DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  newsletter           Newsletter    @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
 
   @@map("esp_connections")
+}
+
+model EspOAuthState {
+  id           String   @id @default(cuid())
+  state        String   @unique
+  newsletterId String
+  userId       String
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([expiresAt])
+  @@map("esp_oauth_states")
 }

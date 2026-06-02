@@ -1,6 +1,7 @@
 import { api } from "./api";
 import type {
   ContentBlock,
+  ContentBlockKind,
   DataSource,
   EspStatus,
   Insights,
@@ -34,31 +35,44 @@ export const looptiltApi = {
   generateFingerprint: (newsletterId: string) =>
     api.post<NewsletterFingerprint>(`${API}/newsletters/${newsletterId}/fingerprint/generate`),
 
-  listBlocks: (newsletterId: string) =>
-    api.get<ContentBlock[]>(`${API}/newsletters/${newsletterId}/blocks`),
+  listBlocks: (newsletterId: string, sendId: string) =>
+    api.get<ContentBlock[]>(`${API}/newsletters/${newsletterId}/sends/${sendId}/blocks`),
   createBlock: (
     newsletterId: string,
-    data: { label: string; intent: string; body: string; topicId?: string }
-  ) => api.post<ContentBlock>(`${API}/newsletters/${newsletterId}/blocks`, data),
-  deleteBlock: (newsletterId: string, blockId: string) =>
-    api.delete(`${API}/newsletters/${newsletterId}/blocks/${blockId}`),
+    sendId: string,
+    data: {
+      kind?: ContentBlockKind;
+      label: string;
+      intent?: string;
+      body?: string;
+      url?: string;
+      topicId?: string;
+    }
+  ) => api.post<ContentBlock>(`${API}/newsletters/${newsletterId}/sends/${sendId}/blocks`, data),
+  deleteBlock: (newsletterId: string, sendId: string, blockId: string) =>
+    api.delete(`${API}/newsletters/${newsletterId}/sends/${sendId}/blocks/${blockId}`),
 
   getEspStatus: (newsletterId: string) =>
     api.get<EspStatus>(`${API}/newsletters/${newsletterId}/esp`),
   connectEsp: (newsletterId: string, data: { dataSource: DataSource; apiKey?: string }) =>
     api.post<EspStatus>(`${API}/newsletters/${newsletterId}/esp/connect`, data),
+  getKitOAuthUrl: (newsletterId: string) =>
+    api.get<{ url: string }>(`${API}/newsletters/${newsletterId}/esp/oauth/url`),
   disconnectEsp: (newsletterId: string) =>
     api.delete(`${API}/newsletters/${newsletterId}/esp`),
 
-  seedSimulator: (newsletterId: string, subscriberCount: number) =>
-    api.post<{ created: number }>(`${API}/newsletters/${newsletterId}/simulator/seed`, {
-      subscriberCount,
-    }),
-  generateSignals: (newsletterId: string, issues: number) =>
-    api.post<{ subscribers: number; events: number; issues: number }>(
-      `${API}/newsletters/${newsletterId}/simulator/generate`,
-      { issues }
-    ),
+  seedSimulator: (newsletterId: string, subscriberCount = 60, issues = 10) =>
+    api.post<{
+      archiveIssues: number;
+      topics: number;
+      fingerprintReady: boolean;
+      subscribers: number;
+      events: number;
+      issues: number;
+      readersUpdated: number;
+      segments: number;
+      memberships: number;
+    }>(`${API}/newsletters/${newsletterId}/simulator/seed`, { subscriberCount, issues }),
 
   listReaders: (newsletterId: string) =>
     api.get<Reader[]>(`${API}/newsletters/${newsletterId}/readers`),
@@ -83,8 +97,12 @@ export const looptiltApi = {
 
   listSends: (newsletterId: string) =>
     api.get<Send[]>(`${API}/newsletters/${newsletterId}/sends`),
+  getSend: (newsletterId: string, sendId: string) =>
+    api.get<Send>(`${API}/newsletters/${newsletterId}/sends/${sendId}`),
   createSend: (newsletterId: string, title: string) =>
     api.post<Send>(`${API}/newsletters/${newsletterId}/sends`, { title }),
+  generateSend: (newsletterId: string, sendId: string) =>
+    api.post<Send>(`${API}/newsletters/${newsletterId}/sends/${sendId}/generate`),
   pushSendToKit: (newsletterId: string, sendId: string) =>
     api.post<Send>(`${API}/newsletters/${newsletterId}/sends/${sendId}/push-to-kit`),
 };

@@ -4,18 +4,19 @@ import { DatabaseService } from '../../common/database/database.service';
 import { CreateContentBlockDto, UpdateContentBlockDto } from './dto/content-block.dto';
 
 /**
- * Manages the creator's modular content block menu. The loop selects and orders
- * these blocks per segment; the creator writes once and never hand-writes per
- * segment.
+ * Manages an issue's content blocks. Blocks are scoped to a single send (issue)
+ * and can be raw copy, links, images, promotions, or author instructions. The
+ * loop selects and orders them per segment so the creator never hand-writes a
+ * variant.
  */
 @Injectable()
 export class BlocksService {
   constructor(private readonly database: DatabaseService) {}
 
-  async list(userId: string, newsletterId: string): Promise<ContentBlock[]> {
-    await this.verifyOwnership(userId, newsletterId);
+  async list(userId: string, newsletterId: string, sendId: string): Promise<ContentBlock[]> {
+    await this.verifySend(userId, newsletterId, sendId);
     return this.database.contentBlock.findMany({
-      where: { newsletterId },
+      where: { sendId },
       orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
     });
   }
@@ -23,15 +24,18 @@ export class BlocksService {
   async create(
     userId: string,
     newsletterId: string,
+    sendId: string,
     dto: CreateContentBlockDto,
   ): Promise<ContentBlock> {
-    await this.verifyOwnership(userId, newsletterId);
+    await this.verifySend(userId, newsletterId, sendId);
     return this.database.contentBlock.create({
       data: {
-        newsletterId,
+        sendId,
+        kind: dto.kind ?? 'CONTENT',
         label: dto.label,
         intent: dto.intent,
         body: dto.body,
+        url: dto.url,
         topicId: dto.topicId,
         order: dto.order ?? 0,
       },
@@ -41,23 +45,29 @@ export class BlocksService {
   async update(
     userId: string,
     newsletterId: string,
+    sendId: string,
     blockId: string,
     dto: UpdateContentBlockDto,
   ): Promise<ContentBlock> {
-    await this.verifyOwnership(userId, newsletterId);
-    await this.findBlock(newsletterId, blockId);
+    await this.verifySend(userId, newsletterId, sendId);
+    await this.findBlock(sendId, blockId);
     return this.database.contentBlock.update({ where: { id: blockId }, data: dto });
   }
 
-  async remove(userId: string, newsletterId: string, blockId: string): Promise<void> {
-    await this.verifyOwnership(userId, newsletterId);
-    await this.findBlock(newsletterId, blockId);
+  async remove(
+    userId: string,
+    newsletterId: string,
+    sendId: string,
+    blockId: string,
+  ): Promise<void> {
+    await this.verifySend(userId, newsletterId, sendId);
+    await this.findBlock(sendId, blockId);
     await this.database.contentBlock.delete({ where: { id: blockId } });
   }
 
-  private async findBlock(newsletterId: string, blockId: string): Promise<ContentBlock> {
+  private async findBlock(sendId: string, blockId: string): Promise<ContentBlock> {
     const block = await this.database.contentBlock.findFirst({
-      where: { id: blockId, newsletterId },
+      where: { id: blockId, sendId },
     });
     if (!block) {
       throw new NotFoundException(`Content block ${blockId} not found`);
@@ -65,15 +75,15 @@ export class BlocksService {
     return block;
   }
 
-  private async verifyOwnership(userId: string, newsletterId: string): Promise<void> {
-    const newsletter = await this.database.newsletter.findUnique({
-      where: { id: newsletterId },
-      select: { userId: true },
+  private async verifySend(userId: string, newsletterId: string, sendId: string): Promise<void> {
+    const send = await this.database.send.findFirst({
+      where: { id: sendId, newsletterId },
+      select: { id: true, newsletter: { select: { userId: true } } },
     });
-    if (!newsletter) {
-      throw new NotFoundException(`Newsletter ${newsletterId} not found`);
+    if (!send) {
+      throw new NotFoundException(`Send ${sendId} not found`);
     }
-    if (newsletter.userId !== userId) {
+    if (send.newsletter.userId !== userId) {
       throw new ForbiddenException('You do not have access to this newsletter');
     }
   }
