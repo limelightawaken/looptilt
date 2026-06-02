@@ -61,7 +61,7 @@ export default function DashboardPage() {
         variants={stagger(0.06)}
         initial="hidden"
         animate="visible"
-        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+        className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4"
       >
         {[
           { label: "Newsletters", value: loading ? "-" : newsletters.length },
@@ -69,7 +69,7 @@ export default function DashboardPage() {
           { label: "Fingerprints ready", value: loading ? "-" : readyFingerprints },
           { label: "Fingerprints pending", value: loading ? "-" : pendingFingerprints },
         ].map((stat) => (
-          <motion.div key={stat.label} variants={fadeUp}>
+          <motion.div key={stat.label} variants={fadeUp} className="h-full">
             <StatCard label={stat.label} value={stat.value} />
           </motion.div>
         ))}

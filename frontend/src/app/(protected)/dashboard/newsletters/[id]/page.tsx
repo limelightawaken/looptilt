@@ -119,7 +119,7 @@ export default function OverviewPage() {
         variants={stagger(0.06)}
         initial="hidden"
         animate="visible"
-        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+        className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4"
       >
         {[
           { label: "Subscribers", value: insights?.totalSubscribers ?? 0 },
@@ -130,7 +130,7 @@ export default function OverviewPage() {
           { label: "At-risk readers", value: insights?.atRiskCount ?? 0, hint: "churn >= 60%" },
           { label: "Active segments", value: activeSegments },
         ].map((stat) => (
-          <motion.div key={stat.label} variants={fadeUp}>
+          <motion.div key={stat.label} variants={fadeUp} className="h-full">
             <StatCard label={stat.label} value={stat.value} hint={stat.hint} />
           </motion.div>
         ))}

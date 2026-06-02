@@ -44,7 +44,7 @@ export function SignalsPanel({ newsletterId }: { newsletterId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Subscribers" value={insights.totalSubscribers} />
         <StatCard label="With fingerprint" value={insights.withFingerprint} />
         <StatCard label="Avg churn risk" value={`${(insights.averageChurn * 100).toFixed(0)}%`} />
