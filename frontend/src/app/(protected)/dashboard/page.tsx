@@ -36,7 +36,9 @@ export default function DashboardPage() {
 
   const readyFingerprints = newsletters.filter((n) => n.fingerprint?.status === "READY").length;
   const totalArchive = newsletters.reduce((sum, n) => sum + n._count.archive, 0);
-  const totalDrafts = newsletters.reduce((sum, n) => sum + n._count.drafts, 0);
+  const pendingFingerprints = newsletters.filter(
+    (n) => n.fingerprint?.status !== "READY",
+  ).length;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -46,7 +48,7 @@ export default function DashboardPage() {
             Welcome back, {session?.user?.name?.split(" ")[0] || "creator"}
           </h1>
           <p className="mt-1.5 text-muted-foreground">
-            The fingerprint engine, the re-segmentation loop, and the ghostwriter - in one place.
+            Personalization, adaptive segments, and ghostwriter drafts in one place.
           </p>
         </div>
         <Link href="/dashboard/newsletters" className={buttonVariants()}>
@@ -64,7 +66,7 @@ export default function DashboardPage() {
           { label: "Newsletters", value: loading ? "-" : newsletters.length },
           { label: "Archive issues", value: loading ? "-" : totalArchive },
           { label: "Fingerprints ready", value: loading ? "-" : readyFingerprints },
-          { label: "Ghostwriter drafts", value: loading ? "-" : totalDrafts },
+          { label: "Fingerprints pending", value: loading ? "-" : pendingFingerprints },
         ].map((stat) => (
           <motion.div key={stat.label} variants={fadeUp}>
             <StatCard label={stat.label} value={stat.value} />

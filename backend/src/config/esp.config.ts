@@ -9,4 +9,6 @@ export default registerAs('esp', () => ({
   appPublicUrl: process.env.APP_PUBLIC_URL || 'http://localhost:3001',
   encryptionKey: process.env.ENCRYPTION_KEY || '',
   enableSimulator: process.env.ENABLE_SIMULATOR === 'true',
+  /** Shared secret appended to registered webhook URLs to authenticate inbound Kit calls. */
+  webhookSecret: process.env.KIT_WEBHOOK_SECRET || '',
 }));

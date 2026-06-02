@@ -20,9 +20,6 @@ export * from './guards/roles.guard';
 export * from './interceptors/logging.interceptor';
 export * from './interceptors/transform.interceptor';
 
-// Pipes
-export * from './pipes/validation.pipe';
-
 // Storage
 export * from './storage/storage.module';
 export * from './storage/storage.service';

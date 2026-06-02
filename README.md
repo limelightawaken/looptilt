@@ -1,10 +1,23 @@
 # LoopTilt
 
-**The Newsletter Fingerprint Engine**
+**Newsletter personalization for Kit (ConvertKit)**
 
-> Most AI in the newsletter world points at the *drafting* problem ("write me an issue"). LoopTilt points at the *understanding* problem — then uses that understanding to power engagement, retention, and affordable output.
+> Most AI in the newsletter world points at the *drafting* problem ("write me an issue"). LoopTilt points at the *understanding* problem, then uses that understanding to power engagement, retention, and affordable output.
 
 **Author:** Tayo Sadique · **Status:** Full end-to-end system · **Last updated:** June 2026
+
+---
+
+## Positioning and naming
+
+| Layer | What to call it | Where it shows up |
+|-------|-----------------|-------------------|
+| **Category (creator-facing)** | Newsletter personalization for Kit | Website, SEO, sales, README headline |
+| **Mechanism (product-internal)** | Newsletter fingerprint (+ reader fingerprints) | Architecture, API, dashboard, PRD technical sections |
+
+**Newsletter personalization for Kit** is the market category: personalize sends per reader segment, in the creator's voice, on top of Kit. Creators and search use language like "newsletter personalization," "ConvertKit," and "segmented sends."
+
+**Newsletter fingerprint** is how LoopTilt delivers that category. It is a structured profile of the publication (topics, voice, audience, depth, obsessions) built from the archive. Reader fingerprints and Kit signals power adaptive segments; the ghostwriter assembles per-segment variants. Say "fingerprint" when explaining *why* LoopTilt is different from a generic AI writer, not as the shelf label on the landing page.
 
 ---
 

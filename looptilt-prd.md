@@ -1,10 +1,20 @@
-# PRD: The Newsletter Fingerprint Engine
+# PRD: LoopTilt — Newsletter personalization for Kit
 
 **A micro-SaaS that reads what a newsletter actually says, and turns that understanding into engagement, retention, and effortless output.**
 
 Author: Tayo Sadique
 Status: Draft v1
 Last updated: June 2026
+
+---
+
+## 0. Positioning and naming
+
+**Creator-facing category:** *Newsletter personalization for Kit (ConvertKit).* Use this in marketing copy, SEO (e.g. "newsletter personalization," "ConvertKit segments," "personalized newsletter"), and any surface a subscriber or creator sees first.
+
+**Technical mechanism:** *Newsletter fingerprint* (and per-subscriber *reader fingerprints*). These terms describe the structured understanding layer inside the product, not the product category. The fingerprint is the shared engine; re-segmentation and ghostwriter are what it unlocks.
+
+Do not lead with "fingerprint engine" in customer-facing UI. Lead with outcomes (personalized sends, adaptive segments, drafts in your voice). Explain fingerprints when describing differentiation vs generic AI drafting tools.
 
 ---
 
@@ -261,7 +271,7 @@ Kit is the first target. It owns SparkLoop, so it is the strategically aligned p
 
 ### Integration principle
 
-Read signals wherever the ESP allows it, write the profile back as fields and tags, and deliver through the richest mechanism that ESP supports, degrading from native conditional content to segment sends to link-out. The fingerprint engine and the per-reader matrix are ESP-agnostic; only the thin adapter at each end changes per platform.
+Read signals wherever the ESP allows it, write the profile back as fields and tags, and deliver through the richest mechanism that ESP supports, degrading from native conditional content to segment sends to link-out. The newsletter fingerprint layer and the per-reader matrix are ESP-agnostic; only the thin adapter at each end changes per platform.
 
 ---
 
@@ -269,7 +279,7 @@ Read signals wherever the ESP allows it, write the profile back as fields and ta
 
 The honest sequencing for a small team, given the dependency between the two features.
 
-**v1: Ghostwriter.** It works with nothing but an archive, no signals, no delivery infrastructure, no per-recipient sends. The creator pastes or imports past issues, the engine learns the voice, and it drafts in that voice immediately. It delivers value on day one, proves the fingerprint engine, and is the piece every creator wants regardless of the loop. Critically, it is also the prerequisite that makes the loop affordable, so it has to exist first anyway.
+**v1: Ghostwriter.** It works with nothing but an archive, no signals, no delivery infrastructure, no per-recipient sends. The creator pastes or imports past issues, the engine learns the voice, and it drafts in that voice immediately. It delivers value on day one, proves the newsletter fingerprint, and is the piece every creator wants regardless of the loop. Critically, it is also the prerequisite that makes the loop affordable, so it has to exist first anyway.
 
 **v2: Re-segmentation loop.** Once voice-preserving generation exists, the loop becomes buildable and affordable. This is the harder piece: it needs signal capture from the ESP (Section 7B), the reader fingerprint and segmentation layer (Section 6B), and per-segment delivery. It is sequenced second because it depends on the ghostwriter to fulfil the personalization demand it creates, and on ESP integration to both read signals and deliver variants.
 

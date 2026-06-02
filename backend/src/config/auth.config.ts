@@ -38,7 +38,11 @@ export const auth = betterAuth({
       maxAge: 60 * 5, // Cache for 5 minutes
     },
   },
-  secret: process.env.BETTER_AUTH_SECRET || 'default-secret-change-in-production',
+  // BETTER_AUTH_SECRET is required at boot (see env.validation). The dev-only
+  // fallback never applies in production and avoids a hardcoded shared secret.
+  secret:
+    process.env.BETTER_AUTH_SECRET ||
+    (isProduction ? undefined : 'dev-only-insecure-secret-do-not-use-in-prod'),
   baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:3001',
   basePath: '/api/auth',
   trustedOrigins: [process.env.FRONTEND_URL || 'http://localhost:3000'],

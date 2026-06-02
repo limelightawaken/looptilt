@@ -147,13 +147,19 @@ export class SegmentsService {
     const matchingIds = subscribers
       .filter((subscriber) => evaluateSegmentRule(rule, subscriber.fingerprint, subscriber))
       .map((subscriber) => subscriber.id);
-    await this.database.segmentMembership.deleteMany({ where: { segmentId: segment.id } });
+    // Swap memberships atomically so a crash never leaves a segment empty mid-recompute.
+    const ops: Prisma.PrismaPromise<unknown>[] = [
+      this.database.segmentMembership.deleteMany({ where: { segmentId: segment.id } }),
+    ];
     if (matchingIds.length > 0) {
-      await this.database.segmentMembership.createMany({
-        data: matchingIds.map((subscriberId) => ({ segmentId: segment.id, subscriberId })),
-        skipDuplicates: true,
-      });
+      ops.push(
+        this.database.segmentMembership.createMany({
+          data: matchingIds.map((subscriberId) => ({ segmentId: segment.id, subscriberId })),
+          skipDuplicates: true,
+        }),
+      );
     }
+    await this.database.$transaction(ops);
     return matchingIds.length;
   }
 

@@ -3,9 +3,9 @@ import "./globals.css";
 import { Providers } from "@/providers";
 
 export const metadata: Metadata = {
-  title: "LoopTilt — Newsletter Fingerprint Engine",
+  title: "LoopTilt · Newsletter personalization for Kit",
   description:
-    "Understand what your newsletter actually says. Build a fingerprint from your archive, draft in your voice, and personalize at scale.",
+    "Personalize every newsletter send for Kit (ConvertKit). Learn your archive, segment readers from behavior, and draft in your voice with per-segment variants.",
 };
 
 export default function RootLayout({

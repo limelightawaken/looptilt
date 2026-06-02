@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../../common/database/database.service';
+import { AuthService } from '../auth/auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
@@ -7,17 +8,27 @@ import { User } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly authService: AuthService,
+  ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const user = await this.database.user.create({
-      data: {
-        email: createUserDto.email,
-        name: createUserDto.name,
-        image: createUserDto.image,
-        emailVerified: false,
-      },
-    });
+    // Delegate to AuthService so the credential account (hashed password) is
+    // created too; otherwise the user could never sign in.
+    const user = await this.authService.createUser(
+      createUserDto.email,
+      createUserDto.password,
+      createUserDto.name ?? '',
+      createUserDto.role ?? 'USER',
+    );
+
+    if (createUserDto.image) {
+      return this.database.user.update({
+        where: { id: user.id },
+        data: { image: createUserDto.image },
+      });
+    }
 
     return user;
   }

@@ -165,6 +165,28 @@ export function ConnectionPanel({ newsletterId, onChange }: ConnectionPanelProps
           </CardContent>
         </Card>
       )}
+
+      {status?.connected && !isDemo && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Re-segmentation loop</CardTitle>
+            <CardDescription>
+              Recompute reader fingerprints and segment membership now from the latest Kit signals,
+              and write segment tags back to Kit. Also runs automatically on a schedule.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              disabled={busy !== null}
+              onClick={() =>
+                run("recompute", () => looptiltApi.recompute(newsletterId), "Loop recomputed")
+              }
+            >
+              {busy === "recompute" ? "Running..." : "Run the loop now"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

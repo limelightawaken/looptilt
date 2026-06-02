@@ -3,7 +3,6 @@ import type {
   ContentBlock,
   DataSource,
   EspStatus,
-  GhostwriterDraft,
   Insights,
   NewsletterDetail,
   NewsletterFingerprint,
@@ -34,11 +33,6 @@ export const looptiltApi = {
     api.get<NewsletterFingerprint>(`${API}/newsletters/${newsletterId}/fingerprint`),
   generateFingerprint: (newsletterId: string) =>
     api.post<NewsletterFingerprint>(`${API}/newsletters/${newsletterId}/fingerprint/generate`),
-
-  listDrafts: (newsletterId: string) =>
-    api.get<GhostwriterDraft[]>(`${API}/newsletters/${newsletterId}/drafts`),
-  createDraft: (newsletterId: string, data: { title: string; brief?: string }) =>
-    api.post<GhostwriterDraft>(`${API}/newsletters/${newsletterId}/drafts`, data),
 
   listBlocks: (newsletterId: string) =>
     api.get<ContentBlock[]>(`${API}/newsletters/${newsletterId}/blocks`),

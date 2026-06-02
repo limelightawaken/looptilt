@@ -117,11 +117,13 @@ export class EspConnectionService {
     const adapter = this.adapterFactory.create(connection);
     const { accountId } = await adapter.verifyConnection();
     const publicUrl = this.configService.get<string>('esp.appPublicUrl') || '';
+    const webhookSecret = this.configService.get<string>('esp.webhookSecret') || '';
     const targetUrl = `${publicUrl}/api/webhooks/kit/${newsletterId}`;
+    const secretParam = webhookSecret ? `&secret=${encodeURIComponent(webhookSecret)}` : '';
     const webhookIds: Record<string, string> = {};
     for (const event of KIT_WEBHOOK_EVENTS) {
       const normalized = event.replace(/^subscriber\./, '');
-      const eventTargetUrl = `${targetUrl}?event=${encodeURIComponent(normalized)}`;
+      const eventTargetUrl = `${targetUrl}?event=${encodeURIComponent(normalized)}${secretParam}`;
       try {
         webhookIds[event] = await adapter.registerWebhook(eventTargetUrl, { event });
       } catch (error) {

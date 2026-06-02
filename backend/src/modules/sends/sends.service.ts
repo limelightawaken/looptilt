@@ -61,7 +61,9 @@ export class SendsService {
     if (segments.length === 0) {
       throw new BadRequestException('No segments with members yet - run the loop first');
     }
-    const topicNameById = await this.topicNameMap(newsletterId);
+    const topics = await this.database.newsletterTopic.findMany({ where: { newsletterId } });
+    const topicNameById = new Map(topics.map((topic) => [topic.id, topic.name]));
+    const topicSlugById = new Map(topics.map((topic) => [topic.id, topic.slug]));
     const newsletter = await this.database.newsletter.findUniqueOrThrow({
       where: { id: newsletterId },
       select: { name: true },
@@ -76,6 +78,7 @@ export class SendsService {
         fingerprint,
         blocks,
         topicNameById,
+        topicSlugById,
         segment,
         profile,
       });
@@ -98,8 +101,14 @@ export class SendsService {
     const send = await this.get(userId, newsletterId, sendId);
     const adapter = this.adapterFactory.create(connection);
     await this.database.send.update({ where: { id: sendId }, data: { status: 'PUBLISHING' } });
+    let pushed = 0;
     for (const variant of send.variants) {
       if (!variant.segment.kitTagId) {
+        // No Kit tag yet means the loop has not written this segment back to Kit.
+        await this.database.segmentVariant.update({
+          where: { id: variant.id },
+          data: { status: 'FAILED' },
+        });
         continue;
       }
       const result = await adapter.createBroadcast({
@@ -112,6 +121,13 @@ export class SendsService {
         where: { id: variant.id },
         data: { kitBroadcastId: result.broadcastId, status: 'PUBLISHED' },
       });
+      pushed += 1;
+    }
+    if (pushed === 0) {
+      await this.database.send.update({ where: { id: sendId }, data: { status: 'FAILED' } });
+      throw new BadRequestException(
+        'No segment has been written back to Kit yet. Run the loop in Live mode so segment tags are created, then push again.',
+      );
     }
     await this.database.send.update({ where: { id: sendId }, data: { status: 'PUBLISHED' } });
     return this.get(userId, newsletterId, sendId);
@@ -161,11 +177,6 @@ export class SendsService {
     }
     const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
     return sorted[0]?.[0] ?? 'UNKNOWN';
-  }
-
-  private async topicNameMap(newsletterId: string): Promise<Map<string, string>> {
-    const topics = await this.database.newsletterTopic.findMany({ where: { newsletterId } });
-    return new Map(topics.map((topic) => [topic.id, topic.name]));
   }
 
   private async requireReadyFingerprint(newsletterId: string): Promise<NewsletterFingerprint> {

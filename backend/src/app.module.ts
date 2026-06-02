@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { ScheduleModule } from '@nestjs/schedule';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { BullModule } from '@nestjs/bullmq';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
@@ -24,17 +24,27 @@ import appConfig from './config/app.config';
 import aiConfig from './config/ai.config';
 import espConfig from './config/esp.config';
 import databaseConfig from './config/database.config';
+import redisConfig from './config/redis.config';
 import { validateEnv } from './config/env.validation';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, aiConfig, espConfig, databaseConfig],
+      load: [appConfig, aiConfig, espConfig, databaseConfig, redisConfig],
       envFilePath: ['.env.local', '.env'],
       validate: validateEnv,
     }),
-    ScheduleModule.forRoot(),
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        connection: {
+          host: config.get<string>('redis.host'),
+          port: config.get<number>('redis.port'),
+          password: config.get<string>('redis.password'),
+        },
+      }),
+    }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 300 }]),
     DatabaseModule,
     CryptoModule,

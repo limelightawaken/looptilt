@@ -30,18 +30,28 @@ export class ReaderFingerprintService {
     if (!connection) {
       return { updated: 0 };
     }
-    const [subscribers, topics] = await Promise.all([
+    const [subscribers, topics, allEvents] = await Promise.all([
       this.database.subscriber.findMany({
         where: { newsletterId, source: connection.dataSource },
       }),
       this.database.newsletterTopic.findMany({ where: { newsletterId } }),
+      this.database.signalEvent.findMany({
+        where: { newsletterId, source: connection.dataSource },
+        orderBy: { occurredAt: 'asc' },
+      }),
     ]);
+    const eventsBySubscriber = new Map<string, SignalEvent[]>();
+    for (const event of allEvents) {
+      const list = eventsBySubscriber.get(event.subscriberId);
+      if (list) {
+        list.push(event);
+      } else {
+        eventsBySubscriber.set(event.subscriberId, [event]);
+      }
+    }
     let updated = 0;
     for (const subscriber of subscribers) {
-      const events = await this.database.signalEvent.findMany({
-        where: { subscriberId: subscriber.id, source: connection.dataSource },
-        orderBy: { occurredAt: 'asc' },
-      });
+      const events = eventsBySubscriber.get(subscriber.id) ?? [];
       const computed = this.computeFingerprint(events, topics);
       await this.persist(subscriber.id, computed);
       updated += 1;
@@ -132,14 +142,18 @@ export class ReaderFingerprintService {
     const now = Date.now();
     const opens = events.filter((e) => e.type === SignalType.OPEN);
     const clicks = events.filter((e) => e.type === SignalType.LINK_CLICK);
+    // Kit has no open webhook (kit-api §3), so live data carries clicks but no
+    // opens. Degrade gracefully: use opens when present, otherwise treat clicks
+    // as the engagement signal so lifecycle/churn stay meaningful in live mode.
+    const engagement = opens.length > 0 ? opens : clicks;
     const midpoint = now - HALF_WINDOW_DAYS * MS_PER_DAY;
-    const recentOpens = opens.filter((e) => e.occurredAt.getTime() >= midpoint).length;
-    const earlyOpens = opens.filter((e) => e.occurredAt.getTime() < midpoint).length;
+    const recentEngagement = engagement.filter((e) => e.occurredAt.getTime() >= midpoint).length;
+    const earlyEngagement = engagement.filter((e) => e.occurredAt.getTime() < midpoint).length;
     const weeksPerHalf = HALF_WINDOW_DAYS / 7;
-    const recentRate = recentOpens / weeksPerHalf;
-    const earlyRate = earlyOpens / weeksPerHalf;
+    const recentRate = recentEngagement / weeksPerHalf;
+    const earlyRate = earlyEngagement / weeksPerHalf;
     const slope = recentRate - earlyRate;
-    const openRate = Math.min(opens.length / ASSUMED_ISSUES, 1);
+    const openRate = Math.min(engagement.length / ASSUMED_ISSUES, 1);
     const lastEventAt = events.length ? events[events.length - 1].occurredAt.getTime() : 0;
     const firstEventAt = events.length ? events[0].occurredAt.getTime() : now;
     const daysSinceLast = events.length ? (now - lastEventAt) / MS_PER_DAY : Number.POSITIVE_INFINITY;
@@ -221,7 +235,9 @@ export class ReaderFingerprintService {
 
   private computeChurn(slope: number, daysSinceLast: number, signalCount: number): number {
     if (signalCount === 0) {
-      return 0.5;
+      // No engagement history yet (e.g. brand-new reader): no evidence of churn,
+      // so do not inflate the at-risk count or the average.
+      return 0;
     }
     const slopeComponent = 0.5 - slope * 1.5;
     const recencyPenalty = Math.min(daysSinceLast / 60, 0.3);

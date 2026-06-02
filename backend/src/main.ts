@@ -12,6 +12,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bodyParser: false, // IMPORTANT: Disable default body parser for Better Auth
   });
+  app.enableShutdownHooks();
   const configService = app.get(ConfigService);
 
   const port = configService.get<number>('PORT', 3001);
@@ -70,7 +71,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('LoopTilt API')
     .setDescription(
-      'LoopTilt (Newsletter Fingerprint Engine) API — archive ingestion, fingerprint generation, and voice-preserving ghostwriter drafts.',
+      'LoopTilt API — newsletter personalization for Kit: archive ingestion, newsletter fingerprint, segments, and voice-preserving ghostwriter drafts.',
     )
     .setVersion('1.0')
     .addCookieAuth('better-auth.session_token')

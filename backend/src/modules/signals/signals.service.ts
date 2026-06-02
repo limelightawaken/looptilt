@@ -72,9 +72,10 @@ export class SignalsService {
   }
 
   private resolveType(eventName: string): SignalType | null {
-    const normalized = eventName.replace(/^subscriber\./, '').replace(/^subscriber_/, (m) => m);
+    // Kit normalizes "subscriber.<event>" to "<event>" in the registered hook,
+    // but accept either form defensively.
     const key = eventName.replace(/^subscriber\./, '');
-    return EVENT_TYPE_MAP[key] ?? EVENT_TYPE_MAP[normalized] ?? null;
+    return EVENT_TYPE_MAP[key] ?? null;
   }
 
   private async upsertSubscriber(
