@@ -4,16 +4,20 @@ services:
     container_name: looptilt-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: looptilt
-      POSTGRES_PASSWORD: looptilt
-      POSTGRES_DB: looptilt
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-looptilt}
+      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
+      POSTGRES_DB: ${POSTGRES_DB:-looptilt}
     volumes:
       - looptilt-postgres-data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U looptilt -d looptilt"]
-      interval: 5s
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-looptilt} -d ${POSTGRES_DB:-looptilt}",
+        ]
+      interval: 10s
       timeout: 5s
       retries: 5
 
@@ -23,14 +27,132 @@ services:
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - looptilt-redis-data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile_inline: |
+        FROM node:20-alpine AS builder
+        WORKDIR /app
+        COPY package*.json ./
+        COPY nest-cli.json ./
+        COPY tsconfig.json ./
+        RUN npm ci
+        COPY prisma ./prisma/
+        RUN npx prisma generate
+        COPY src ./src
+        COPY scripts ./scripts/
+        RUN npm run build
+        RUN ls -la dist/ && test -f dist/main.js
+        FROM node:20-alpine AS production
+        WORKDIR /app
+        COPY package*.json ./
+        RUN npm ci --omit=dev && npm cache clean --force
+        RUN npm install prisma@^6.0.0 --save-dev && npm cache clean --force
+        COPY --from=builder /app/prisma ./prisma
+        COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+        COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+        COPY --from=builder /app/dist ./dist
+        RUN ls -la dist/ && test -f dist/main.js
+        RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
+        RUN chown -R nestjs:nodejs /app
+        USER nestjs
+        EXPOSE 3001
+        CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+    container_name: looptilt-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - "3001"
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      API_PREFIX: ${API_PREFIX:-api}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-looptilt}:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/${POSTGRES_DB:-looptilt}?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      BETTER_AUTH_SECRET: ${SERVICE_BASE64_BETTERAUTH}
+      BETTER_AUTH_URL: ${SERVICE_URL_BACKEND}
+      FRONTEND_URL: ${SERVICE_URL_FRONTEND}
+      APP_PUBLIC_URL: ${SERVICE_URL_BACKEND}
+      ENCRYPTION_KEY: ${SERVICE_BASE64_ENCRYPTION}
+      ENABLE_SIMULATOR: "false"
+      ALLOW_HEURISTIC_FALLBACK: ${ALLOW_HEURISTIC_FALLBACK:-false}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      AWS_REGION: ${AWS_REGION:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-true}
+      KIT_API_BASE_URL: ${KIT_API_BASE_URL:-https://api.kit.com/v4}
+      KIT_OAUTH_CLIENT_ID: ${KIT_OAUTH_CLIENT_ID:-}
+      KIT_OAUTH_CLIENT_SECRET: ${KIT_OAUTH_CLIENT_SECRET:-}
+      KIT_OAUTH_REDIRECT_URI: ${KIT_OAUTH_REDIRECT_URI:-}
+      KIT_OAUTH_AUTHORIZE_URL: ${KIT_OAUTH_AUTHORIZE_URL:-https://api.kit.com/v4/oauth/authorize}
+      KIT_OAUTH_TOKEN_URL: ${KIT_OAUTH_TOKEN_URL:-https://api.kit.com/v4/oauth/token}
+      KIT_OAUTH_SCOPE: ${KIT_OAUTH_SCOPE:-}
+      KIT_WEBHOOK_SECRET: ${KIT_WEBHOOK_SECRET:-}
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile_inline: |
+        FROM node:20-alpine AS builder
+        WORKDIR /app
+        COPY package*.json ./
+        RUN npm ci
+        COPY . .
+        ARG NEXT_PUBLIC_BACKEND_URL
+        ENV NEXT_PUBLIC_BACKEND_URL=$$NEXT_PUBLIC_BACKEND_URL
+        RUN npm run build
+        FROM node:20-alpine AS production
+        WORKDIR /app
+        ENV NODE_ENV=production
+        ENV PORT=3000
+        ENV HOSTNAME=0.0.0.0
+        RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+        COPY --from=builder /app/public ./public
+        COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+        COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+        USER nextjs
+        EXPOSE 3000
+        CMD ["node", "server.js"]
+      args:
+        NEXT_PUBLIC_BACKEND_URL: ${SERVICE_URL_BACKEND}
+    container_name: looptilt-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    expose:
+      - "3000"
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_BACKEND_URL: ${SERVICE_URL_BACKEND}
 
 volumes:
   looptilt-postgres-data:
