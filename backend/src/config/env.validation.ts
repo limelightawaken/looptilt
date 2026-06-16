@@ -19,6 +19,8 @@ const envSchema = z
     ALLOW_HEURISTIC_FALLBACK: z.string().optional(),
     ENABLE_SIMULATOR: z.string().optional(),
     ENCRYPTION_KEY: z.string().optional(),
+    REQUIRE_EMAIL_VERIFICATION: z.string().optional(),
+    EMAIL_PROVIDER: z.string().optional(),
   })
   .superRefine((env, ctx) => {
     const isProduction = env.NODE_ENV === 'production';
@@ -49,7 +51,10 @@ const envSchema = z
         path: ['ENCRYPTION_KEY'],
       });
     }
-    const missingEmail = getMissingEmailEnvKeys(env);
+    const missingEmail =
+      env.REQUIRE_EMAIL_VERIFICATION === 'false'
+        ? []
+        : getMissingEmailEnvKeys(env);
     for (const key of missingEmail) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

@@ -72,11 +72,12 @@ services:
       test:
         - CMD
         - node
-        - '-e'
-        - "fetch('http://127.0.0.1:3001/api/health').then((r) => { if (!r.ok) throw new Error(r.status) })"
+        - -e
+        - "fetch('http://127.0.0.1:3001/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      start_period: 120s
       timeout: 5s
-      interval: 5s
-      retries: 10
+      interval: 10s
+      retries: 6
     environment:
       SERVICE_URL_BACKEND_3001: ''
       HOSTNAME: '0.0.0.0'
@@ -93,7 +94,7 @@ services:
       APP_PUBLIC_URL: '${BACKEND_URL:-${SERVICE_URL_BACKEND}}'
       ENCRYPTION_KEY: '${SERVICE_PASSWORD_ENCRYPTION}'
       ENABLE_SIMULATOR: 'false'
-      ALLOW_HEURISTIC_FALLBACK: '${ALLOW_HEURISTIC_FALLBACK:-false}'
+      ALLOW_HEURISTIC_FALLBACK: '${ALLOW_HEURISTIC_FALLBACK:-true}'
       OPENAI_API_KEY: '${OPENAI_API_KEY:-}'
       OPENAI_BASE_URL: '${OPENAI_BASE_URL:-}'
       OPENAI_MODEL: '${OPENAI_MODEL:-gpt-4o-mini}'

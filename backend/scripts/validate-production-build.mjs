@@ -26,13 +26,15 @@ function resolveEmailProvider() {
 }
 
 if (process.env.NODE_ENV === 'production') {
+  const requireEmail = process.env.REQUIRE_EMAIL_VERIFICATION !== 'false';
   const provider = resolveEmailProvider();
-  const requiredKeys =
-    provider === 'unosend'
+  const requiredKeys = requireEmail
+    ? provider === 'unosend'
       ? PRODUCTION_UNOSEND_KEYS
       : provider === 'resend'
         ? PRODUCTION_RESEND_KEYS
-        : PRODUCTION_SMTP_KEYS;
+        : PRODUCTION_SMTP_KEYS
+    : [];
   const missing = requiredKeys.filter((key) => {
     if (key === 'UNOSEND_API_KEY') {
       return !(process.env.UNOSEND_API_KEY?.trim() || process.env.RESEND_API_KEY?.trim());
