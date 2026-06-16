@@ -1,0 +1,7 @@
+# Local docker compose secrets (use .env.example as template)
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
