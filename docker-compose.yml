@@ -81,53 +81,62 @@ services:
       interval: 15s
       retries: 8
     environment:
+      # Coolify Traefik routing (service name + port)
       SERVICE_URL_BACKEND_3001: ''
       HOSTNAME: '0.0.0.0'
       NODE_ENV: production
       PORT: '3001'
-      API_PREFIX: '${API_PREFIX:-api}'
-      POSTGRES_USER: '${POSTGRES_USER:-looptilt}'
+      API_PREFIX: '${API_PREFIX}'
+      # URLs — same structure as local .env (entrypoint fills fallbacks)
+      BACKEND_URL: '${BACKEND_URL}'
+      FRONTEND_URL: '${FRONTEND_URL}'
+      SERVICE_URL_BACKEND: '${SERVICE_URL_BACKEND}'
+      SERVICE_URL_FRONTEND: '${SERVICE_URL_FRONTEND}'
+      # Postgres — entrypoint builds URL-safe DATABASE_URL
+      POSTGRES_USER: '${POSTGRES_USER}'
       POSTGRES_PASSWORD: '${SERVICE_PASSWORD_POSTGRES}'
-      POSTGRES_HOST: '${POSTGRES_HOSTNAME:-postgres}'
-      POSTGRES_PORT: '${POSTGRES_PORT:-5432}'
-      POSTGRES_DB: '${POSTGRES_DB:-looptilt}'
-      DATABASE_URL: 'postgresql://${POSTGRES_USER:-looptilt}:${SERVICE_PASSWORD_POSTGRES}@${POSTGRES_HOSTNAME:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-looptilt}?schema=public'
-      REDIS_HOST: '${REDIS_HOSTNAME:-redis}'
-      REDIS_PORT: '${REDIS_PORT:-6379}'
-      REDIS_PASSWORD: '${REDIS_PASSWORD:-}'
+      POSTGRES_HOST: '${POSTGRES_HOSTNAME}'
+      POSTGRES_PORT: '${POSTGRES_PORT}'
+      POSTGRES_DB: '${POSTGRES_DB}'
+      # Redis
+      REDIS_HOST: '${REDIS_HOSTNAME}'
+      REDIS_PORT: '${REDIS_PORT}'
+      REDIS_PASSWORD: '${REDIS_PASSWORD}'
+      # Auth / crypto
       BETTER_AUTH_SECRET: '${SERVICE_PASSWORD_BETTERAUTH}'
-      BETTER_AUTH_URL: '${BACKEND_URL:-${SERVICE_URL_BACKEND}}'
-      FRONTEND_URL: '${FRONTEND_URL:-${SERVICE_URL_FRONTEND}}'
-      APP_PUBLIC_URL: '${BACKEND_URL:-${SERVICE_URL_BACKEND}}'
       ENCRYPTION_KEY: '${SERVICE_PASSWORD_ENCRYPTION}'
+      # AI
       ENABLE_SIMULATOR: 'false'
-      ALLOW_HEURISTIC_FALLBACK: '${ALLOW_HEURISTIC_FALLBACK:-true}'
-      OPENAI_API_KEY: '${OPENAI_API_KEY:-}'
-      OPENAI_BASE_URL: '${OPENAI_BASE_URL:-}'
-      OPENAI_MODEL: '${OPENAI_MODEL:-gpt-4o-mini}'
-      AWS_REGION: '${AWS_REGION:-}'
-      AWS_ACCESS_KEY_ID: '${AWS_ACCESS_KEY_ID:-}'
-      AWS_SECRET_ACCESS_KEY: '${AWS_SECRET_ACCESS_KEY:-}'
-      AWS_S3_BUCKET: '${AWS_S3_BUCKET:-}'
-      EMAIL_PROVIDER: '${EMAIL_PROVIDER:-unosend}'
-      UNOSEND_API_KEY: '${UNOSEND_API_KEY:-}'
-      UNOSEND_BASE_URL: '${UNOSEND_BASE_URL:-https://api.unosend.co}'
-      RESEND_API_KEY: '${RESEND_API_KEY:-}'
-      RESEND_API_URL: '${RESEND_API_URL:-https://api.resend.com/emails}'
-      SMTP_HOST: '${SMTP_HOST:-}'
-      SMTP_PORT: '${SMTP_PORT:-587}'
-      SMTP_USER: '${SMTP_USER:-}'
-      SMTP_PASS: '${SMTP_PASS:-}'
-      SMTP_FROM: '${SMTP_FROM:-}'
-      REQUIRE_EMAIL_VERIFICATION: '${REQUIRE_EMAIL_VERIFICATION:-true}'
-      KIT_API_BASE_URL: '${KIT_API_BASE_URL:-https://api.kit.com/v4}'
-      KIT_OAUTH_CLIENT_ID: '${KIT_OAUTH_CLIENT_ID:-}'
-      KIT_OAUTH_CLIENT_SECRET: '${KIT_OAUTH_CLIENT_SECRET:-}'
-      KIT_OAUTH_REDIRECT_URI: '${KIT_OAUTH_REDIRECT_URI:-}'
-      KIT_OAUTH_AUTHORIZE_URL: '${KIT_OAUTH_AUTHORIZE_URL:-https://api.kit.com/v4/oauth/authorize}'
-      KIT_OAUTH_TOKEN_URL: '${KIT_OAUTH_TOKEN_URL:-https://api.kit.com/v4/oauth/token}'
-      KIT_OAUTH_SCOPE: '${KIT_OAUTH_SCOPE:-}'
-      KIT_WEBHOOK_SECRET: '${KIT_WEBHOOK_SECRET:-}'
+      ALLOW_HEURISTIC_FALLBACK: '${ALLOW_HEURISTIC_FALLBACK}'
+      OPENAI_API_KEY: '${OPENAI_API_KEY}'
+      OPENAI_BASE_URL: '${OPENAI_BASE_URL}'
+      OPENAI_MODEL: '${OPENAI_MODEL}'
+      # Storage
+      AWS_REGION: '${AWS_REGION}'
+      AWS_ACCESS_KEY_ID: '${AWS_ACCESS_KEY_ID}'
+      AWS_SECRET_ACCESS_KEY: '${AWS_SECRET_ACCESS_KEY}'
+      AWS_S3_BUCKET: '${AWS_S3_BUCKET}'
+      # Email
+      EMAIL_PROVIDER: '${EMAIL_PROVIDER}'
+      UNOSEND_API_KEY: '${UNOSEND_API_KEY}'
+      UNOSEND_BASE_URL: '${UNOSEND_BASE_URL}'
+      RESEND_API_KEY: '${RESEND_API_KEY}'
+      RESEND_API_URL: '${RESEND_API_URL}'
+      SMTP_HOST: '${SMTP_HOST}'
+      SMTP_PORT: '${SMTP_PORT}'
+      SMTP_USER: '${SMTP_USER}'
+      SMTP_PASS: '${SMTP_PASS}'
+      SMTP_FROM: '${SMTP_FROM}'
+      REQUIRE_EMAIL_VERIFICATION: '${REQUIRE_EMAIL_VERIFICATION}'
+      # Kit ESP
+      KIT_API_BASE_URL: '${KIT_API_BASE_URL}'
+      KIT_OAUTH_CLIENT_ID: '${KIT_OAUTH_CLIENT_ID}'
+      KIT_OAUTH_CLIENT_SECRET: '${KIT_OAUTH_CLIENT_SECRET}'
+      KIT_OAUTH_REDIRECT_URI: '${KIT_OAUTH_REDIRECT_URI}'
+      KIT_OAUTH_AUTHORIZE_URL: '${KIT_OAUTH_AUTHORIZE_URL}'
+      KIT_OAUTH_TOKEN_URL: '${KIT_OAUTH_TOKEN_URL}'
+      KIT_OAUTH_SCOPE: '${KIT_OAUTH_SCOPE}'
+      KIT_WEBHOOK_SECRET: '${KIT_WEBHOOK_SECRET}'
 
   frontend:
     build:
@@ -154,7 +163,7 @@ services:
         EXPOSE 3000
         CMD ["node", "server.js"]
       args:
-        NEXT_PUBLIC_BACKEND_URL: ${BACKEND_URL:-${SERVICE_URL_BACKEND}}
+        NEXT_PUBLIC_BACKEND_URL: ${BACKEND_URL}
     restart: unless-stopped
     depends_on:
       backend:
@@ -163,16 +172,19 @@ services:
       test:
         - CMD
         - node
-        - '-e'
-        - "fetch('http://127.0.0.1:3000').then((r) => { if (!r.ok) throw new Error(r.status) })"
-      timeout: 5s
-      interval: 5s
-      retries: 10
+        - -e
+        - "fetch('http://127.0.0.1:3000').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      start_period: 60s
+      timeout: 10s
+      interval: 10s
+      retries: 6
     environment:
       SERVICE_URL_FRONTEND_3000: ''
       HOSTNAME: '0.0.0.0'
       NODE_ENV: production
       PORT: '3000'
+      BACKEND_URL: '${BACKEND_URL}'
+      FRONTEND_URL: '${FRONTEND_URL}'
 
 volumes:
   looptilt-postgres-data:
