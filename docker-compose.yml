@@ -8,14 +8,14 @@ services:
       timeout: 5s
       retries: 10
     environment:
-      - POSTGRES_HOST=/var/run/postgresql
-      - 'PGPORT=${POSTGRES_PORT:-5432}'
-      - 'POSTGRES_PORT=${POSTGRES_PORT:-5432}'
-      - 'POSTGRES_USER=${POSTGRES_USER:-looptilt}'
-      - 'PGPASSWORD=${SERVICE_PASSWORD_POSTGRES}'
-      - 'POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}'
-      - 'PGDATABASE=${POSTGRES_DB:-looptilt}'
-      - 'POSTGRES_DB=${POSTGRES_DB:-looptilt}'
+      POSTGRES_HOST: /var/run/postgresql
+      PGPORT: '${POSTGRES_PORT:-5432}'
+      POSTGRES_PORT: '${POSTGRES_PORT:-5432}'
+      POSTGRES_USER: '${POSTGRES_USER:-looptilt}'
+      PGPASSWORD: '${SERVICE_PASSWORD_POSTGRES}'
+      POSTGRES_PASSWORD: '${SERVICE_PASSWORD_POSTGRES}'
+      PGDATABASE: '${POSTGRES_DB:-looptilt}'
+      POSTGRES_DB: '${POSTGRES_DB:-looptilt}'
     volumes:
       - 'looptilt-postgres-data:/var/lib/postgresql/data'
 
@@ -78,48 +78,48 @@ services:
       interval: 5s
       retries: 10
     environment:
-      - SERVICE_URL_BACKEND_3001
-      - HOSTNAME=0.0.0.0
-      - NODE_ENV=production
-      - PORT=3001
-      - 'API_PREFIX=${API_PREFIX:-api}'
-      - 'DATABASE_URL=postgresql://${POSTGRES_USER:-looptilt}:${SERVICE_PASSWORD_POSTGRES}@${POSTGRES_HOSTNAME:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-looptilt}?schema=public'
-      - 'REDIS_HOST=${REDIS_HOSTNAME:-redis}'
-      - 'REDIS_PORT=${REDIS_PORT:-6379}'
-      - 'REDIS_PASSWORD=${REDIS_PASSWORD:-}'
-      - 'BETTER_AUTH_SECRET=${SERVICE_PASSWORD_BETTERAUTH}'
-      - 'BETTER_AUTH_URL=${BACKEND_URL:-${SERVICE_URL_BACKEND}}'
-      - 'FRONTEND_URL=${FRONTEND_URL:-${SERVICE_URL_FRONTEND}}'
-      - 'APP_PUBLIC_URL=${BACKEND_URL:-${SERVICE_URL_BACKEND}}'
-      - 'ENCRYPTION_KEY=${SERVICE_PASSWORD_ENCRYPTION}'
-      - ENABLE_SIMULATOR=false
-      - 'ALLOW_HEURISTIC_FALLBACK=${ALLOW_HEURISTIC_FALLBACK:-false}'
-      - 'OPENAI_API_KEY=${OPENAI_API_KEY:-}'
-      - 'OPENAI_BASE_URL=${OPENAI_BASE_URL:-}'
-      - 'OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}'
-      - 'AWS_REGION=${AWS_REGION:-}'
-      - 'AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}'
-      - 'AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}'
-      - 'AWS_S3_BUCKET=${AWS_S3_BUCKET:-}'
-      - 'EMAIL_PROVIDER=${EMAIL_PROVIDER:-unosend}'
-      - 'UNOSEND_API_KEY=${UNOSEND_API_KEY:-${RESEND_API_KEY:-}}'
-      - 'UNOSEND_BASE_URL=${UNOSEND_BASE_URL:-https://api.unosend.co}'
-      - 'RESEND_API_KEY=${RESEND_API_KEY:-}'
-      - 'RESEND_API_URL=${RESEND_API_URL:-https://api.resend.com/emails}'
-      - 'SMTP_HOST=${SMTP_HOST:-}'
-      - 'SMTP_PORT=${SMTP_PORT:-587}'
-      - 'SMTP_USER=${SMTP_USER:-}'
-      - 'SMTP_PASS=${SMTP_PASS:-}'
-      - 'SMTP_FROM=${SMTP_FROM:-}'
-      - 'REQUIRE_EMAIL_VERIFICATION=${REQUIRE_EMAIL_VERIFICATION:-true}'
-      - 'KIT_API_BASE_URL=${KIT_API_BASE_URL:-https://api.kit.com/v4}'
-      - 'KIT_OAUTH_CLIENT_ID=${KIT_OAUTH_CLIENT_ID:-}'
-      - 'KIT_OAUTH_CLIENT_SECRET=${KIT_OAUTH_CLIENT_SECRET:-}'
-      - 'KIT_OAUTH_REDIRECT_URI=${KIT_OAUTH_REDIRECT_URI:-}'
-      - 'KIT_OAUTH_AUTHORIZE_URL=${KIT_OAUTH_AUTHORIZE_URL:-https://api.kit.com/v4/oauth/authorize}'
-      - 'KIT_OAUTH_TOKEN_URL=${KIT_OAUTH_TOKEN_URL:-https://api.kit.com/v4/oauth/token}'
-      - 'KIT_OAUTH_SCOPE=${KIT_OAUTH_SCOPE:-}'
-      - 'KIT_WEBHOOK_SECRET=${KIT_WEBHOOK_SECRET:-}'
+      SERVICE_URL_BACKEND_3001: ''
+      HOSTNAME: '0.0.0.0'
+      NODE_ENV: production
+      PORT: '3001'
+      API_PREFIX: '${API_PREFIX:-api}'
+      DATABASE_URL: 'postgresql://${POSTGRES_USER:-looptilt}:${SERVICE_PASSWORD_POSTGRES}@${POSTGRES_HOSTNAME:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-looptilt}?schema=public'
+      REDIS_HOST: '${REDIS_HOSTNAME:-redis}'
+      REDIS_PORT: '${REDIS_PORT:-6379}'
+      REDIS_PASSWORD: '${REDIS_PASSWORD:-}'
+      BETTER_AUTH_SECRET: '${SERVICE_PASSWORD_BETTERAUTH}'
+      BETTER_AUTH_URL: '${BACKEND_URL:-${SERVICE_URL_BACKEND}}'
+      FRONTEND_URL: '${FRONTEND_URL:-${SERVICE_URL_FRONTEND}}'
+      APP_PUBLIC_URL: '${BACKEND_URL:-${SERVICE_URL_BACKEND}}'
+      ENCRYPTION_KEY: '${SERVICE_PASSWORD_ENCRYPTION}'
+      ENABLE_SIMULATOR: 'false'
+      ALLOW_HEURISTIC_FALLBACK: '${ALLOW_HEURISTIC_FALLBACK:-false}'
+      OPENAI_API_KEY: '${OPENAI_API_KEY:-}'
+      OPENAI_BASE_URL: '${OPENAI_BASE_URL:-}'
+      OPENAI_MODEL: '${OPENAI_MODEL:-gpt-4o-mini}'
+      AWS_REGION: '${AWS_REGION:-}'
+      AWS_ACCESS_KEY_ID: '${AWS_ACCESS_KEY_ID:-}'
+      AWS_SECRET_ACCESS_KEY: '${AWS_SECRET_ACCESS_KEY:-}'
+      AWS_S3_BUCKET: '${AWS_S3_BUCKET:-}'
+      EMAIL_PROVIDER: '${EMAIL_PROVIDER:-unosend}'
+      UNOSEND_API_KEY: '${UNOSEND_API_KEY:-}'
+      UNOSEND_BASE_URL: '${UNOSEND_BASE_URL:-https://api.unosend.co}'
+      RESEND_API_KEY: '${RESEND_API_KEY:-}'
+      RESEND_API_URL: '${RESEND_API_URL:-https://api.resend.com/emails}'
+      SMTP_HOST: '${SMTP_HOST:-}'
+      SMTP_PORT: '${SMTP_PORT:-587}'
+      SMTP_USER: '${SMTP_USER:-}'
+      SMTP_PASS: '${SMTP_PASS:-}'
+      SMTP_FROM: '${SMTP_FROM:-}'
+      REQUIRE_EMAIL_VERIFICATION: '${REQUIRE_EMAIL_VERIFICATION:-true}'
+      KIT_API_BASE_URL: '${KIT_API_BASE_URL:-https://api.kit.com/v4}'
+      KIT_OAUTH_CLIENT_ID: '${KIT_OAUTH_CLIENT_ID:-}'
+      KIT_OAUTH_CLIENT_SECRET: '${KIT_OAUTH_CLIENT_SECRET:-}'
+      KIT_OAUTH_REDIRECT_URI: '${KIT_OAUTH_REDIRECT_URI:-}'
+      KIT_OAUTH_AUTHORIZE_URL: '${KIT_OAUTH_AUTHORIZE_URL:-https://api.kit.com/v4/oauth/authorize}'
+      KIT_OAUTH_TOKEN_URL: '${KIT_OAUTH_TOKEN_URL:-https://api.kit.com/v4/oauth/token}'
+      KIT_OAUTH_SCOPE: '${KIT_OAUTH_SCOPE:-}'
+      KIT_WEBHOOK_SECRET: '${KIT_WEBHOOK_SECRET:-}'
 
   frontend:
     build:
@@ -161,11 +161,10 @@ services:
       interval: 5s
       retries: 10
     environment:
-      - SERVICE_URL_FRONTEND_3000
-      - HOSTNAME=0.0.0.0
-      - NODE_ENV=production
-      - PORT=3000
-      - 'NEXT_PUBLIC_BACKEND_URL=${BACKEND_URL:-${SERVICE_URL_BACKEND}}'
+      SERVICE_URL_FRONTEND_3000: ''
+      HOSTNAME: '0.0.0.0'
+      NODE_ENV: production
+      PORT: '3000'
 
 volumes:
   looptilt-postgres-data:
