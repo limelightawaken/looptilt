@@ -27,28 +27,11 @@ const envSchema = z
     if (!isProduction) {
       return;
     }
-    const hasOpenAiKey = Boolean(env.OPENAI_API_KEY);
-    const allowsHeuristic = env.ALLOW_HEURISTIC_FALLBACK === 'true';
-    if (!hasOpenAiKey && !allowsHeuristic) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          'Production requires OPENAI_API_KEY, or ALLOW_HEURISTIC_FALLBACK=true to explicitly accept degraded AI.',
-        path: ['OPENAI_API_KEY'],
-      });
-    }
     if (env.ENABLE_SIMULATOR === 'true') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'ENABLE_SIMULATOR must not be true in production.',
         path: ['ENABLE_SIMULATOR'],
-      });
-    }
-    if (!env.ENCRYPTION_KEY || env.ENCRYPTION_KEY.length < MIN_ENCRYPTION_KEY_LENGTH) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `ENCRYPTION_KEY must be at least ${MIN_ENCRYPTION_KEY_LENGTH} characters in production.`,
-        path: ['ENCRYPTION_KEY'],
       });
     }
   });
@@ -67,13 +50,30 @@ export function validateEnv(config: Record<string, unknown>): Record<string, unk
   }
 
   const isProduction = config.NODE_ENV === 'production';
-  if (isProduction && config.REQUIRE_EMAIL_VERIFICATION !== 'false') {
-    const missingEmail = getMissingEmailEnvKeys(config);
-    if (missingEmail.length > 0) {
-      const messages = missingEmail
-        .map((key) => `- Production requires ${key} for email verification.`)
-        .join('\n');
-      throw new Error(`Invalid environment configuration:\n${messages}`);
+  if (isProduction) {
+    const hasOpenAiKey = Boolean(String(config.OPENAI_API_KEY ?? '').trim());
+    const allowsHeuristic = config.ALLOW_HEURISTIC_FALLBACK !== 'false';
+    if (!hasOpenAiKey && !allowsHeuristic) {
+      throw new Error(
+        'Invalid environment configuration:\n- Production requires OPENAI_API_KEY, or ALLOW_HEURISTIC_FALLBACK must not be false.',
+      );
+    }
+
+    const encryptionKey = String(config.ENCRYPTION_KEY ?? '');
+    if (encryptionKey.length < MIN_ENCRYPTION_KEY_LENGTH) {
+      throw new Error(
+        `Invalid environment configuration:\n- ENCRYPTION_KEY must be at least ${MIN_ENCRYPTION_KEY_LENGTH} characters in production.`,
+      );
+    }
+
+    if (config.REQUIRE_EMAIL_VERIFICATION !== 'false') {
+      const missingEmail = getMissingEmailEnvKeys(config);
+      if (missingEmail.length > 0) {
+        const messages = missingEmail
+          .map((key) => `- Production requires ${key} for email verification.`)
+          .join('\n');
+        throw new Error(`Invalid environment configuration:\n${messages}`);
+      }
     }
   }
 

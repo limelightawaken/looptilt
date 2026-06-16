@@ -47,6 +47,7 @@ services:
         COPY scripts ./scripts/
         RUN npm run build
         RUN ls -la dist/ && test -f dist/main.js
+        RUN chmod +x scripts/docker-entrypoint.sh
         FROM node:20-alpine AS production
         WORKDIR /app
         COPY package*.json ./
@@ -56,12 +57,13 @@ services:
         COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
         COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
         COPY --from=builder /app/dist ./dist
+        COPY --from=builder /app/scripts/docker-entrypoint.sh ./scripts/docker-entrypoint.sh
         RUN ls -la dist/ && test -f dist/main.js
         RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
         RUN chown -R nestjs:nodejs /app
         USER nestjs
         EXPOSE 3001
-        CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+        CMD ["sh", "scripts/docker-entrypoint.sh"]
     restart: unless-stopped
     depends_on:
       postgres:
@@ -74,16 +76,21 @@ services:
         - node
         - -e
         - "fetch('http://127.0.0.1:3001/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-      start_period: 120s
-      timeout: 5s
-      interval: 10s
-      retries: 6
+      start_period: 180s
+      timeout: 10s
+      interval: 15s
+      retries: 8
     environment:
       SERVICE_URL_BACKEND_3001: ''
       HOSTNAME: '0.0.0.0'
       NODE_ENV: production
       PORT: '3001'
       API_PREFIX: '${API_PREFIX:-api}'
+      POSTGRES_USER: '${POSTGRES_USER:-looptilt}'
+      POSTGRES_PASSWORD: '${SERVICE_PASSWORD_POSTGRES}'
+      POSTGRES_HOST: '${POSTGRES_HOSTNAME:-postgres}'
+      POSTGRES_PORT: '${POSTGRES_PORT:-5432}'
+      POSTGRES_DB: '${POSTGRES_DB:-looptilt}'
       DATABASE_URL: 'postgresql://${POSTGRES_USER:-looptilt}:${SERVICE_PASSWORD_POSTGRES}@${POSTGRES_HOSTNAME:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-looptilt}?schema=public'
       REDIS_HOST: '${REDIS_HOSTNAME:-redis}'
       REDIS_PORT: '${REDIS_PORT:-6379}'

@@ -338,7 +338,7 @@ async function bootstrap() {
   });
   }
 
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   console.log(`🚀 Application is running on: http://localhost:${port}/${apiPrefix}`);
   if (!isProduction) {
     console.log(`📚 Swagger documentation: http://localhost:${port}/${apiPrefix}/docs`);
