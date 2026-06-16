@@ -51,17 +51,6 @@ const envSchema = z
         path: ['ENCRYPTION_KEY'],
       });
     }
-    const missingEmail =
-      env.REQUIRE_EMAIL_VERIFICATION === 'false'
-        ? []
-        : getMissingEmailEnvKeys(env);
-    for (const key of missingEmail) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `Production requires ${key} for email verification.`,
-        path: [key],
-      });
-    }
   });
 
 export type ValidatedEnv = z.infer<typeof envSchema>;
@@ -76,5 +65,17 @@ export function validateEnv(config: Record<string, unknown>): Record<string, unk
     const messages = result.error.issues.map((issue) => `- ${issue.message}`).join('\n');
     throw new Error(`Invalid environment configuration:\n${messages}`);
   }
+
+  const isProduction = config.NODE_ENV === 'production';
+  if (isProduction && config.REQUIRE_EMAIL_VERIFICATION !== 'false') {
+    const missingEmail = getMissingEmailEnvKeys(config);
+    if (missingEmail.length > 0) {
+      const messages = missingEmail
+        .map((key) => `- Production requires ${key} for email verification.`)
+        .join('\n');
+      throw new Error(`Invalid environment configuration:\n${messages}`);
+    }
+  }
+
   return config;
 }
