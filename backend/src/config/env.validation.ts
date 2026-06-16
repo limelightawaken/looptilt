@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getMissingSmtpEnvKeys } from '../common/email/smtp.transport';
+import { getMissingEmailEnvKeys } from '../common/email/smtp.transport';
 
 const MIN_ENCRYPTION_KEY_LENGTH = 32;
 
@@ -49,8 +49,8 @@ const envSchema = z
         path: ['ENCRYPTION_KEY'],
       });
     }
-    const missingSmtp = getMissingSmtpEnvKeys(env);
-    for (const key of missingSmtp) {
+    const missingEmail = getMissingEmailEnvKeys(env);
+    for (const key of missingEmail) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: `Production requires ${key} for email verification.`,

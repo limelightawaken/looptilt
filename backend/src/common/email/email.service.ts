@@ -1,12 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { sendSmtpMail } from './smtp.transport';
-
-interface SendMailOptions {
-  to: string;
-  subject: string;
-  text?: string;
-  html?: string;
-}
+import { SendMailOptions } from './email.types';
+import { sendMail } from './send-mail';
 
 @Injectable()
 export class EmailService {
@@ -14,7 +8,7 @@ export class EmailService {
 
   async sendMail(options: SendMailOptions): Promise<void> {
     try {
-      await sendSmtpMail(options);
+      await sendMail(options);
       this.logger.log(`Email sent successfully to ${options.to}`);
     } catch (error) {
       this.logger.error(`Failed to send email to ${options.to}`, error);

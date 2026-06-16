@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { PrismaClient } from '@prisma/client';
-import { sendSmtpMail } from '../common/email/smtp.transport';
+import { sendMail } from '../common/email/send-mail';
 
 const prisma = new PrismaClient();
 
@@ -26,7 +26,7 @@ export const auth = betterAuth({
           sendOnSignIn: true,
           autoSignInAfterVerification: true,
           sendVerificationEmail: async ({ user, url }) => {
-            await sendSmtpMail({
+            await sendMail({
               to: user.email,
               subject: 'Verify your LoopTilt email',
               html: `
