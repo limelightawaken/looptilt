@@ -5,7 +5,9 @@ export interface SendMailOptions {
   html?: string;
 }
 
-export type EmailProviderName = 'smtp' | 'resend';
+export type EmailProviderName = 'smtp' | 'resend' | 'unosend';
+
+/** Matches the default in @unosend/node. */
+export const DEFAULT_UNOSEND_BASE_URL = 'https://api.unosend.co';
 
 export const DEFAULT_RESEND_API_URL = 'https://api.resend.com/emails';
-export const UNOSEND_API_URL = 'https://api.unosend.co/v1/emails';

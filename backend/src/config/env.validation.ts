@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getMissingEmailEnvKeys } from '../common/email/smtp.transport';
+import { getMissingEmailEnvKeys } from '../common/email/email-config';
 
 const MIN_ENCRYPTION_KEY_LENGTH = 32;
 

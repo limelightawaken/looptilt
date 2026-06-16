@@ -1,40 +1,5 @@
 import * as nodemailer from 'nodemailer';
 
-export const PRODUCTION_SMTP_ENV_KEYS = [
-  'SMTP_HOST',
-  'SMTP_USER',
-  'SMTP_PASS',
-  'SMTP_FROM',
-] as const;
-
-export const PRODUCTION_RESEND_ENV_KEYS = ['RESEND_API_KEY', 'SMTP_FROM'] as const;
-
-export function getMissingSmtpEnvKeys(
-  env: Record<string, unknown> = process.env,
-): string[] {
-  return PRODUCTION_SMTP_ENV_KEYS.filter((key) => {
-    const value = env[key];
-    return typeof value !== 'string' || value.trim().length === 0;
-  });
-}
-
-export function getMissingResendEnvKeys(
-  env: Record<string, unknown> = process.env,
-): string[] {
-  return PRODUCTION_RESEND_ENV_KEYS.filter((key) => {
-    const value = env[key];
-    return typeof value !== 'string' || value.trim().length === 0;
-  });
-}
-
-export function getMissingEmailEnvKeys(
-  env: Record<string, unknown> = process.env,
-): string[] {
-  return env.EMAIL_PROVIDER === 'resend'
-    ? getMissingResendEnvKeys(env)
-    : getMissingSmtpEnvKeys(env);
-}
-
 export function createSmtpTransporter(): nodemailer.Transporter {
   const host = process.env.SMTP_HOST;
   const user = process.env.SMTP_USER;
